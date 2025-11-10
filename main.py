@@ -185,10 +185,10 @@ class Field:
 
 
 class Player(pygame.sprite.Sprite):
-    def __init__(self, x, y, color, speed=50):
+    def __init__(self, pos, color, speed=50):
         super().__init__()
         self.speed = speed
-        self.pos = pygame.Vector2(x, y)
+        self.pos = pos
         self.image = pygame.Surface(
             (PLAYER_RADIUS * 2, PLAYER_RADIUS * 2), pygame.SRCALPHA
         )
@@ -215,10 +215,12 @@ class Player(pygame.sprite.Sprite):
     def move_speed_per_frame(self):
         return PLAYER_MAX_SPEED * (self.speed / 100)
 
-    def move(self, direction: pygame.Vector2):
-        self.pos.x += direction.x * self.move_speed_per_frame()
-        self.pos.y += direction.y * self.move_speed_per_frame()
+    def set_pos(self, pos: pygame.Vector2):
+        self.pos = pos
         self.rect.center = self.pos
+
+    def move(self, direction: pygame.Vector2):
+        self.set_pos(self.pos + direction * self.move_speed_per_frame())
 
     def start_streak_route(self, yards=15):
         dx = yards * YARD_LENGTH
@@ -271,6 +273,12 @@ class Player(pygame.sprite.Sprite):
             if direction.length() > 1:
                 self.move(direction.normalize())
 
+    def update(self):
+        self.update_block(game.ball_carrier if game.ball_carrier else qb)
+        self.update_route()
+        self.update_man_coverage()
+        self.update_pursue_target()
+
 
 class Ball(pygame.sprite.Sprite):
     def __init__(self):
@@ -289,9 +297,12 @@ class Ball(pygame.sprite.Sprite):
         )
         self.rect = self.image.get_rect(center=self.pos)
 
-    def update(self):
-        self.pos += self.velocity
+    def set_pos(self, pos: pygame.Vector2):
+        self.pos = pos
         self.rect.center = self.pos
+
+    def update(self):
+        self.set_pos(self.pos + self.velocity)
         self.velocity *= 0.98  # Simulate friction
 
 
@@ -309,40 +320,53 @@ class Halo(pygame.sprite.Sprite):
         )
         self.rect = self.image.get_rect(center=self.pos)
 
+    def set_pos(self, pos: pygame.Vector2):
+        self.pos = pos
+        self.rect.center = self.pos
+
 
 game = Game()
 field = Field()
 
 PLAYER_COLOR = get_color("blue", 600)
 
-lt = Player(get_yard_x(game.ball_position), FIELD_CENTER.y - 30, PLAYER_COLOR, 75)
-lg = Player(get_yard_x(game.ball_position), FIELD_CENTER.y - 15, PLAYER_COLOR, 75)
-c = Player(get_yard_x(game.ball_position), FIELD_CENTER.y, PLAYER_COLOR, 75)
-rg = Player(get_yard_x(game.ball_position), FIELD_CENTER.y + 15, PLAYER_COLOR, 75)
-rt = Player(get_yard_x(game.ball_position), FIELD_CENTER.y + 30, PLAYER_COLOR, 75)
-qb = Player(get_yard_x(game.ball_position - 5), FIELD_CENTER.y, PLAYER_COLOR, 80)
-wr_1 = Player(get_yard_x(game.ball_position), FIELD_CENTER.y + 120, PLAYER_COLOR, 95)
-wr_2 = Player(get_yard_x(game.ball_position), FIELD_CENTER.y - 120, PLAYER_COLOR, 95)
+# Offensive formation
+lt_pos = pygame.Vector2(get_yard_x(game.ball_position), FIELD_CENTER.y - 30)
+lg_pos = pygame.Vector2(get_yard_x(game.ball_position), FIELD_CENTER.y - 15)
+c_pos = pygame.Vector2(get_yard_x(game.ball_position), FIELD_CENTER.y)
+rg_pos = pygame.Vector2(get_yard_x(game.ball_position), FIELD_CENTER.y + 15)
+rt_pos = pygame.Vector2(get_yard_x(game.ball_position), FIELD_CENTER.y + 30)
+qb_pos = pygame.Vector2(get_yard_x(game.ball_position - 5), FIELD_CENTER.y)
+wr_1_pos = pygame.Vector2(get_yard_x(game.ball_position), FIELD_CENTER.y + 120)
+wr_2_pos = pygame.Vector2(get_yard_x(game.ball_position), FIELD_CENTER.y - 120)
 
-lde = Player(
-    get_yard_x(game.ball_position + 1), FIELD_CENTER.y - 30, get_color("orange"), 75
-)
-ldt = Player(
-    get_yard_x(game.ball_position + 1), FIELD_CENTER.y - 15, get_color("orange"), 75
-)
-rdt = Player(
-    get_yard_x(game.ball_position + 1), FIELD_CENTER.y + 15, get_color("orange"), 75
-)
-rde = Player(
-    get_yard_x(game.ball_position + 1), FIELD_CENTER.y + 30, get_color("orange"), 75
-)
-cb_1 = Player(
-    get_yard_x(game.ball_position + 10), FIELD_CENTER.y + 120, get_color("orange"), 92
-)
-cb_2 = Player(
-    get_yard_x(game.ball_position + 15), FIELD_CENTER.y - 120, get_color("orange"), 92
-)
+# Defensive formation
+lde_pos = pygame.Vector2(get_yard_x(game.ball_position + 1), FIELD_CENTER.y - 30)
+ldt_pos = pygame.Vector2(get_yard_x(game.ball_position + 1), FIELD_CENTER.y - 15)
+rdt_pos = pygame.Vector2(get_yard_x(game.ball_position + 1), FIELD_CENTER.y + 15)
+rde_pos = pygame.Vector2(get_yard_x(game.ball_position + 1), FIELD_CENTER.y + 30)
+cb_1_pos = pygame.Vector2(get_yard_x(game.ball_position + 10), FIELD_CENTER.y + 120)
+cb_2_pos = pygame.Vector2(get_yard_x(game.ball_position + 15), FIELD_CENTER.y - 120)
 
+# Create offensive players
+lt = Player(lt_pos.copy(), PLAYER_COLOR, 77)
+lg = Player(lg_pos.copy(), PLAYER_COLOR, 70)
+c = Player(c_pos.copy(), PLAYER_COLOR, 74)
+rg = Player(rg_pos.copy(), PLAYER_COLOR, 76)
+rt = Player(rt_pos.copy(), PLAYER_COLOR, 77)
+qb = Player(qb_pos.copy(), PLAYER_COLOR, 88)
+wr_1 = Player(wr_1_pos.copy(), PLAYER_COLOR, 95)
+wr_2 = Player(wr_2_pos.copy(), PLAYER_COLOR, 91)
+
+# Create defensive players
+lde = Player(lde_pos.copy(), get_color("orange"), 86)
+ldt = Player(ldt_pos.copy(), get_color("orange"), 76)
+rdt = Player(rdt_pos.copy(), get_color("orange"), 73)
+rde = Player(rde_pos.copy(), get_color("orange"), 87)
+cb_1 = Player(cb_1_pos.copy(), get_color("orange"), 94)
+cb_2 = Player(cb_2_pos.copy(), get_color("orange"), 96)
+
+# Create ball and halo
 ball = Ball()
 halo = Halo()
 
@@ -391,10 +415,8 @@ def avoid_player_collisions(players, min_distance):
                 angle = random.uniform(-0.5, 0.5)
                 repulse = repulse.rotate(math.degrees(angle))
                 move_amount = (min_distance - dist) / 2
-                p1.pos += repulse * move_amount
-                p2.pos -= repulse * move_amount
-                p1.rect.center = p1.pos
-                p2.rect.center = p2.pos
+                p1.set_pos(p1.pos + repulse * move_amount)
+                p2.set_pos(p2.pos - repulse * move_amount)
 
 
 while True:
@@ -439,61 +461,21 @@ while True:
                 # Reset
 
                 # Reset offense positions
-                lt.pos = pygame.Vector2(
-                    get_yard_x(game.ball_position), FIELD_CENTER.y - 30
-                )
-                lt.rect.center = lt.pos
-                lg.pos = pygame.Vector2(
-                    get_yard_x(game.ball_position), FIELD_CENTER.y - 15
-                )
-                lg.rect.center = lg.pos
-                c.pos = pygame.Vector2(get_yard_x(game.ball_position), FIELD_CENTER.y)
-                c.rect.center = c.pos
-                rg.pos = pygame.Vector2(
-                    get_yard_x(game.ball_position), FIELD_CENTER.y + 15
-                )
-                rg.rect.center = rg.pos
-                rt.pos = pygame.Vector2(
-                    get_yard_x(game.ball_position), FIELD_CENTER.y + 30
-                )
-                rt.rect.center = rt.pos
-                qb.pos = pygame.Vector2(
-                    get_yard_x(game.ball_position - 5), FIELD_CENTER.y
-                )
-                qb.rect.center = qb.pos
-                wr_1.pos = pygame.Vector2(
-                    get_yard_x(game.ball_position), FIELD_CENTER.y + 120
-                )
-                wr_1.rect.center = wr_1.pos
-                wr_2.pos = pygame.Vector2(
-                    get_yard_x(game.ball_position), FIELD_CENTER.y - 120
-                )
-                wr_2.rect.center = wr_2.pos
+                lt.set_pos(lt_pos.copy())
+                lg.set_pos(lg_pos.copy())
+                c.set_pos(c_pos.copy())
+                rg.set_pos(rg_pos.copy())
+                rt.set_pos(rt_pos.copy())
+                qb.set_pos(qb_pos.copy())
+                wr_1.set_pos(wr_1_pos.copy())
+                wr_2.set_pos(wr_2_pos.copy())
                 # Reset defense positions
-                cb_1.pos = pygame.Vector2(
-                    get_yard_x(game.ball_position + 10), FIELD_CENTER.y + 120
-                )
-                cb_1.rect.center = cb_1.pos
-                cb_2.pos = pygame.Vector2(
-                    get_yard_x(game.ball_position + 15), FIELD_CENTER.y - 120
-                )
-                cb_2.rect.center = cb_2.pos
-                lde.pos = pygame.Vector2(
-                    get_yard_x(game.ball_position + 2), FIELD_CENTER.y - 30
-                )
-                lde.rect.center = lde.pos
-                ldt.pos = pygame.Vector2(
-                    get_yard_x(game.ball_position + 2), FIELD_CENTER.y - 15
-                )
-                ldt.rect.center = ldt.pos
-                rdt.pos = pygame.Vector2(
-                    get_yard_x(game.ball_position + 2), FIELD_CENTER.y + 15
-                )
-                rdt.rect.center = rdt.pos
-                rde.pos = pygame.Vector2(
-                    get_yard_x(game.ball_position + 2), FIELD_CENTER.y + 30
-                )
-                rde.rect.center = rde.pos
+                lde.set_pos(lde_pos.copy())
+                ldt.set_pos(ldt_pos.copy())
+                rdt.set_pos(rdt_pos.copy())
+                rde.set_pos(rde_pos.copy())
+                cb_1.set_pos(cb_1_pos.copy())
+                cb_2.set_pos(cb_2_pos.copy())
                 # reset state
                 # reset oline
                 for blocker in oline:
@@ -508,29 +490,16 @@ while True:
                 cb_1.man_coverage_target = None
                 cb_2.man_coverage_target = None
                 # reset ball position
-                ball.pos = c.pos.copy()
-                ball.rect.center = c.pos.copy()
+                ball.set_pos(c.pos.copy())
                 ball.velocity = pygame.Vector2(0, 0)
-                halo.pos = c.pos.copy()
-                halo.rect.center = c.pos.copy()
                 game.ball_carrier = c
 
-    wr_1.update_route()
-    wr_2.update_route()
-    cb_1.update_man_coverage()
-    cb_2.update_man_coverage()
-    cb_1.update_pursue_target()
-    cb_2.update_pursue_target()
-    for blocker in oline:
-        blocker.update_block(game.ball_carrier if game.ball_carrier else qb)
-    for defender in dline:
-        defender.update_pursue_target()
+    all_players.update()
     move_ball_carrier(keys)
     avoid_player_collisions(all_players, PLAYER_RADIUS * 2.5)
 
     if game.ball_carrier:
-        ball.pos = game.ball_carrier.pos.copy()
-        ball.rect.center = game.ball_carrier.pos.copy()
+        ball.set_pos(game.ball_carrier.pos.copy())
     else:
         ball.update()
         for wr in [wr_1, wr_2]:
@@ -543,8 +512,7 @@ while True:
                 ball.velocity = pygame.Vector2(0, 0)
 
     # Make halo follow ball
-    halo.pos = ball.pos.copy()
-    halo.rect.center = ball.pos.copy()
+    halo.set_pos(ball.pos.copy())
 
     field.draw(screen)
     all_players.draw(screen)
