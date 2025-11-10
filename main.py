@@ -1,4 +1,5 @@
 import math
+import random
 import sys
 from typing import Optional
 
@@ -202,8 +203,14 @@ class Player(pygame.sprite.Sprite):
         )
         self.rect = self.image.get_rect(center=self.pos)
 
+        # Offensive behavior
+        self.block_target: Optional[Player] = None
         self.running_route = False
         self.route_target = None
+
+        # Defensive behavior
+        self.pursue_target: Optional[Player] = None
+        self.man_coverage_target: Optional[Player] = None
 
     def move_speed_per_frame(self):
         return PLAYER_MAX_SPEED * (self.speed / 100)
@@ -219,6 +226,27 @@ class Player(pygame.sprite.Sprite):
         self.route_target = pygame.Vector2(self.pos.x + dx, self.pos.y + dy)
         self.running_route = True
 
+    def update_block(self, ball_carrier):
+        if self.block_target:
+            defender = self.block_target
+            to_carrier = ball_carrier.pos - defender.pos
+            # Add random offset to block point
+            offset = pygame.Vector2(
+                random.uniform(-10, 10), random.uniform(-10, 10)  # X offset  # Y offset
+            )
+            block_point = defender.pos + to_carrier * 0.3 + offset
+            direction = block_point - self.pos
+            distance = direction.length()
+            if distance > PLAYER_RADIUS * 2.5:
+                self.move(direction.normalize())
+            else:
+                # Mirror defender's lateral movement (y-axis) with some randomness
+                lateral = pygame.Vector2(
+                    0, defender.pos.y - self.pos.y + random.uniform(-5, 5)
+                )
+                if lateral.length() > 1:
+                    self.move(lateral.normalize())
+
     def update_route(self):
         if self.running_route and self.route_target:
             direction = self.route_target - self.pos
@@ -229,6 +257,18 @@ class Player(pygame.sprite.Sprite):
             else:
                 direction = direction.normalize()
                 self.move(direction)
+
+    def update_man_coverage(self):
+        if self.man_coverage_target:
+            direction = self.man_coverage_target.pos - self.pos
+            if direction.length() > 1:
+                self.move(direction.normalize())
+
+    def update_pursue_target(self):
+        if self.pursue_target:
+            direction = self.pursue_target.pos - self.pos
+            if direction.length() > 1:
+                self.move(direction.normalize())
 
 
 class Ball(pygame.sprite.Sprite):
@@ -274,16 +314,44 @@ field = Field()
 
 PLAYER_COLOR = get_color("blue", 600)
 
-c = Player(get_yard_x(game.ball_position), FIELD_CENTER.y, PLAYER_COLOR, 60)
-qb = Player(get_yard_x(game.ball_position - 5), FIELD_CENTER.y, PLAYER_COLOR, 75)
-wr = Player(get_yard_x(game.ball_position), FIELD_CENTER.y + 120, PLAYER_COLOR, 96)
+lt = Player(get_yard_x(game.ball_position - 2), FIELD_CENTER.y - 40, PLAYER_COLOR, 75)
+lg = Player(get_yard_x(game.ball_position - 1), FIELD_CENTER.y - 20, PLAYER_COLOR, 75)
+c = Player(get_yard_x(game.ball_position), FIELD_CENTER.y, PLAYER_COLOR, 75)
+rg = Player(get_yard_x(game.ball_position - 1), FIELD_CENTER.y + 20, PLAYER_COLOR, 75)
+rt = Player(get_yard_x(game.ball_position - 2), FIELD_CENTER.y + 40, PLAYER_COLOR, 75)
+qb = Player(get_yard_x(game.ball_position - 5), FIELD_CENTER.y, PLAYER_COLOR, 99)
+wr_1 = Player(get_yard_x(game.ball_position), FIELD_CENTER.y + 120, PLAYER_COLOR, 99)
+wr_2 = Player(get_yard_x(game.ball_position), FIELD_CENTER.y - 120, PLAYER_COLOR, 99)
+
+cb_1 = Player(
+    get_yard_x(game.ball_position + 10), FIELD_CENTER.y + 120, get_color("orange"), 90
+)
+cb_2 = Player(
+    get_yard_x(game.ball_position + 15), FIELD_CENTER.y - 120, get_color("orange"), 90
+)
+lde = Player(
+    get_yard_x(game.ball_position + 2), FIELD_CENTER.y - 40, get_color("orange"), 75
+)
+ldt = Player(
+    get_yard_x(game.ball_position + 2), FIELD_CENTER.y - 20, get_color("orange"), 75
+)
+rdt = Player(
+    get_yard_x(game.ball_position + 2), FIELD_CENTER.y + 20, get_color("orange"), 75
+)
+rde = Player(
+    get_yard_x(game.ball_position + 2), FIELD_CENTER.y + 40, get_color("orange"), 75
+)
 
 ball = Ball()
 halo = Halo()
 
 game.ball_carrier = c
 
-all_players = pygame.sprite.Group(c, qb, wr)
+oline = pygame.sprite.Group(lt, lg, c, rg, rt)
+dline = pygame.sprite.Group(lde, ldt, rdt, rde)
+offense = pygame.sprite.Group(oline, qb, wr_1, wr_2)
+defense = pygame.sprite.Group(dline, cb_1, cb_2)
+all_players = pygame.sprite.Group(offense, defense)
 
 BALL_THROW_SPEED = 16
 
@@ -307,6 +375,27 @@ def move_ball_carrier(keys):
         game.ball_carrier.move(direction)
 
 
+def avoid_player_collisions(players, min_distance):
+    player_list = list(players)
+    for i in range(len(player_list)):
+        for j in range(i + 1, len(player_list)):
+            p1 = player_list[i]
+            p2 = player_list[j]
+            offset = p1.pos - p2.pos
+            dist = offset.length()
+            if dist < min_distance and dist > 0:
+                # Calculate repulsion direction
+                repulse = offset.normalize()
+                # Add a small random "bobble" nudge
+                angle = random.uniform(-0.5, 0.5)
+                repulse = repulse.rotate(math.degrees(angle))
+                move_amount = (min_distance - dist) / 2
+                p1.pos += repulse * move_amount
+                p2.pos -= repulse * move_amount
+                p1.rect.center = p1.pos
+                p2.rect.center = p2.pos
+
+
 while True:
     screen.fill((0, 0, 0))
 
@@ -319,9 +408,22 @@ while True:
         if event.type == pygame.KEYDOWN:
             if event.key == pygame.K_SPACE:
                 if game.ball_carrier == c:
-                    # Snap ball to qb and start route for wr
+                    # Snap ball to qb and start play
                     game.ball_carrier = qb
-                    wr.start_streak_route(yards=12)
+                    wr_1.start_streak_route(yards=24)
+                    cb_1.man_coverage_target = wr_1
+                    wr_2.start_streak_route(yards=12)
+                    cb_2.man_coverage_target = wr_2
+                    # make all oline puruse nearest defender
+                    for blocker in oline:
+                        nearest_defender = min(
+                            dline,
+                            key=lambda defender: (defender.pos - blocker.pos).length(),
+                        )
+                        blocker.block_target = nearest_defender
+                    # make all dline pursue qb
+                    for defender in dline:
+                        defender.pursue_target = qb
                 elif game.ball_carrier == qb:
                     # Throw ball to mouse position
                     game.ball_carrier = None
@@ -332,23 +434,79 @@ while True:
                     else:
                         direction = pygame.Vector2(0, 0)
                     ball.velocity = direction * BALL_THROW_SPEED
-                elif game.ball_carrier != qb:
-                    # Throw back to c
-                    game.ball_carrier = c
             if event.key == pygame.K_r:
                 # Reset
+
+                # Reset offense positions
+                lt.pos = pygame.Vector2(
+                    get_yard_x(game.ball_position - 2), FIELD_CENTER.y - 40
+                )
+                lt.rect.center = lt.pos
+                lg.pos = pygame.Vector2(
+                    get_yard_x(game.ball_position - 1), FIELD_CENTER.y - 20
+                )
+                lg.rect.center = lg.pos
                 c.pos = pygame.Vector2(get_yard_x(game.ball_position), FIELD_CENTER.y)
                 c.rect.center = c.pos
+                rg.pos = pygame.Vector2(
+                    get_yard_x(game.ball_position - 1), FIELD_CENTER.y + 20
+                )
+                rg.rect.center = rg.pos
+                rt.pos = pygame.Vector2(
+                    get_yard_x(game.ball_position - 2), FIELD_CENTER.y + 40
+                )
+                rt.rect.center = rt.pos
                 qb.pos = pygame.Vector2(
                     get_yard_x(game.ball_position - 5), FIELD_CENTER.y
                 )
                 qb.rect.center = qb.pos
-                wr.pos = pygame.Vector2(
+                wr_1.pos = pygame.Vector2(
                     get_yard_x(game.ball_position), FIELD_CENTER.y + 120
                 )
-                wr.rect.center = wr.pos
-                wr.running_route = False
-                wr.route_target = None
+                wr_1.rect.center = wr_1.pos
+                wr_2.pos = pygame.Vector2(
+                    get_yard_x(game.ball_position), FIELD_CENTER.y - 120
+                )
+                wr_2.rect.center = wr_2.pos
+                # Reset defense positions
+                cb_1.pos = pygame.Vector2(
+                    get_yard_x(game.ball_position + 10), FIELD_CENTER.y + 120
+                )
+                cb_1.rect.center = cb_1.pos
+                cb_2.pos = pygame.Vector2(
+                    get_yard_x(game.ball_position + 15), FIELD_CENTER.y - 120
+                )
+                cb_2.rect.center = cb_2.pos
+                lde.pos = pygame.Vector2(
+                    get_yard_x(game.ball_position + 2), FIELD_CENTER.y - 40
+                )
+                lde.rect.center = lde.pos
+                ldt.pos = pygame.Vector2(
+                    get_yard_x(game.ball_position + 2), FIELD_CENTER.y - 20
+                )
+                ldt.rect.center = ldt.pos
+                rdt.pos = pygame.Vector2(
+                    get_yard_x(game.ball_position + 2), FIELD_CENTER.y + 20
+                )
+                rdt.rect.center = rdt.pos
+                rde.pos = pygame.Vector2(
+                    get_yard_x(game.ball_position + 2), FIELD_CENTER.y + 40
+                )
+                rde.rect.center = rde.pos
+                # reset state
+                # reset oline
+                for blocker in oline:
+                    blocker.block_target = None
+                # reset dline
+                for defender in dline:
+                    defender.pursue_target = None
+                wr_1.running_route = False
+                wr_1.route_target = None
+                wr_2.running_route = False
+                wr_2.route_target = None
+                cb_1.man_coverage_target = None
+                cb_2.man_coverage_target = None
+                # reset ball position
                 ball.pos = c.pos.copy()
                 ball.rect.center = c.pos.copy()
                 ball.velocity = pygame.Vector2(0, 0)
@@ -356,8 +514,18 @@ while True:
                 halo.rect.center = c.pos.copy()
                 game.ball_carrier = c
 
-    wr.update_route()
+    wr_1.update_route()
+    wr_2.update_route()
+    cb_1.update_man_coverage()
+    cb_2.update_man_coverage()
+    cb_1.update_pursue_target()
+    cb_2.update_pursue_target()
+    for blocker in oline:
+        blocker.update_block(game.ball_carrier if game.ball_carrier else qb)
+    for defender in dline:
+        defender.update_pursue_target()
     move_ball_carrier(keys)
+    avoid_player_collisions(all_players, PLAYER_RADIUS * 2.5)
 
     if game.ball_carrier:
         ball.pos = game.ball_carrier.pos.copy()
@@ -368,9 +536,14 @@ while True:
         ball.update()
         halo.pos = ball.pos.copy()
         halo.rect.center = ball.pos.copy()
-        if ball.rect.colliderect(wr.rect):
-            game.ball_carrier = wr
-            ball.velocity = pygame.Vector2(0, 0)
+        for wr in [wr_1, wr_2]:
+            if halo.rect.colliderect(wr.rect):
+                game.ball_carrier = wr
+                wr.running_route = False
+                wr.route_target = None
+                for defender in dline:
+                    defender.pursue_target = wr
+                ball.velocity = pygame.Vector2(0, 0)
 
     field.draw(screen)
     all_players.draw(screen)
