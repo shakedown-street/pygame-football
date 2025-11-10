@@ -323,9 +323,14 @@ while True:
                     game.ball_carrier = qb
                     wr.start_streak_route(yards=12)
                 elif game.ball_carrier == qb:
-                    # Throw ball to wr
+                    # Throw ball to mouse position
                     game.ball_carrier = None
-                    direction = (wr.pos - ball.pos).normalize()
+                    mouse_pos = pygame.Vector2(pygame.mouse.get_pos())
+                    direction = mouse_pos - ball.pos
+                    if direction.length() != 0:
+                        direction = direction.normalize()
+                    else:
+                        direction = pygame.Vector2(0, 0)
                     ball.velocity = direction * BALL_THROW_SPEED
                 elif game.ball_carrier != qb:
                     # Throw back to c
