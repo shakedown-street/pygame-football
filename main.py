@@ -44,8 +44,12 @@ PLAYER_RADIUS = 6
 BALL_RADIUS = 3
 HALO_RADIUS = PLAYER_RADIUS * 1.5
 
-BALL_THROW_SPEED = 16
-BALL_FRICTION = 0.98
+THROW_SPEED = 9  # Higher value = faster throw
+THROW_MIN_FRAMES = 12  # Minimum frames for a short throw
+THROW_ARC_DIVISOR = 6  # Higher value = lower arc
+THROW_MIN_ARC = 30  # Minimum arc height (in yards)
+
+CATCH_THRESHOLD = YARD_LENGTH * 2.25  # Max height for a catch
 
 REPULSE_STRENGTH = 0.5
 
@@ -384,7 +388,9 @@ class Ball(pygame.sprite.Sprite):
     def __init__(self):
         super().__init__()
         self.pos = pygame.Vector2(0, 0)
+        self.z = 0
         self.velocity = pygame.Vector2(0, 0)
+        self.z_velocity = 0
         self.image = pygame.Surface((BALL_RADIUS * 2, BALL_RADIUS * 2), pygame.SRCALPHA)
         pygame.draw.circle(
             self.image,
@@ -397,13 +403,45 @@ class Ball(pygame.sprite.Sprite):
         )
         self.rect = self.image.get_rect(center=self.pos)
 
+    def throw_to(self, target_pos: pygame.Vector2):
+        displacement = target_pos - self.pos
+        distance = displacement.length()
+        n_frames = max(THROW_MIN_FRAMES, int(distance / THROW_SPEED))
+        self.velocity = displacement / n_frames
+
+        arc_height = max(THROW_MIN_ARC, distance / THROW_ARC_DIVISOR)
+        half_frames = n_frames / 2
+        self.z = 0
+        self.z_velocity = 2 * arc_height / half_frames
+        self.z_gravity = (2 * arc_height) / (half_frames**2)
+        self.frames_left = n_frames
+
+        # print(
+        #     f"n_frames={n_frames}, velocity={self.velocity}, arc_height={arc_height}, z={self.z}, z_velocity={self.z_velocity}, z_gravity={self.z_gravity}"
+        # )
+
     def set_pos(self, pos: pygame.Vector2):
         self.pos = pos
         self.rect.center = self.pos
 
     def update(self):
-        self.set_pos(self.pos + self.velocity)
-        self.velocity *= BALL_FRICTION
+        if getattr(self, "frames_left", 0) > 0:
+            self.set_pos(self.pos + self.velocity)
+            self.z += self.z_velocity
+            self.z_velocity -= self.z_gravity
+            self.frames_left -= 1
+            if self.z < 0:
+                self.z = 0
+                self.z_velocity = 0
+                self.velocity = pygame.Vector2(0, 0)
+            # print(
+            #     f"frames_left={self.frames_left}, pos={self.pos}, z={self.z}, z_yards={self.z / YARD_LENGTH} z_velocity={self.z_velocity}"
+            # )
+        else:
+            # Ball has landed, stop movement
+            self.z = 0
+            self.z_velocity = 0
+            self.velocity = pygame.Vector2(0, 0)
 
 
 class Halo(pygame.sprite.Sprite):
@@ -611,12 +649,7 @@ while True:
                     qb.stop()
                     game.ball_carrier = None
                     mouse_pos = pygame.Vector2(pygame.mouse.get_pos())
-                    direction = mouse_pos - ball.pos
-                    if direction.length() != 0:
-                        direction = direction.normalize()
-                    else:
-                        direction = pygame.Vector2(0, 0)
-                    ball.velocity = direction * BALL_THROW_SPEED
+                    ball.throw_to(mouse_pos)
             if event.key == pygame.K_r:
                 reset_play()
 
@@ -628,13 +661,14 @@ while True:
         ball.set_pos(game.ball_carrier.pos.copy())
     else:
         ball.update()
-        for wr in [wr_1, wr_2, wr_3, hb, te]:
-            if halo.rect.colliderect(wr.rect):
-                game.ball_carrier = wr
-                wr.reset_route()
-                for defender in defense:
-                    defender.pursue_target = wr
-                ball.velocity = pygame.Vector2(0, 0)
+        if ball.z > 0 and ball.z < CATCH_THRESHOLD:
+            for wr in [wr_1, wr_2, wr_3, hb, te]:
+                if halo.rect.colliderect(wr.rect):
+                    game.ball_carrier = wr
+                    wr.reset_route()
+                    for defender in defense:
+                        defender.pursue_target = wr
+                    ball.velocity = pygame.Vector2(0, 0)
 
     # Make halo follow ball
     halo.set_pos(ball.pos.copy())
