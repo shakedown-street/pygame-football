@@ -40,14 +40,22 @@ else:
     denom = n - (1 - (1 - ACCELERATION_RATE) ** n) / ACCELERATION_RATE
     PLAYER_MAX_SPEED = FORTY_YARDS / denom
 
-BALL_THROW_SPEED = 16
-
 PLAYER_RADIUS = 6
 BALL_RADIUS = 3
 HALO_RADIUS = PLAYER_RADIUS * 1.5
 
+BALL_THROW_SPEED = 16
+BALL_FRICTION = 0.98
+
+REPULSE_STRENGTH = 0.5
+
+BLOCK_POINT_FACTOR = 0.3
+BLOCK_DISTANCE = PLAYER_RADIUS * 3
+BLOCK_LATERAL_THRESHOLD = 1
+
 COLLISION_DISTANCE = PLAYER_RADIUS * 2
 PURSUE_LEAD_FACTOR = 0.6  # Determines how far ahead to lead when pursuing a target
+MAN_COVERAGE_SHADOW_DISTANCE = PLAYER_RADIUS * 3
 
 
 def get_yard_x(yard):
@@ -303,15 +311,15 @@ class Player(pygame.sprite.Sprite):
             # Calculate the midpoint between defender and ball carrier
             defender = self.block_target
             to_carrier = ball_carrier.pos - defender.pos
-            block_point = defender.pos + to_carrier * 0.3  # 0.3 = stand between
+            block_point = defender.pos + to_carrier * BLOCK_POINT_FACTOR
             direction = block_point - self.pos
             distance = direction.length()
-            if distance > PLAYER_RADIUS * 2.5:
+            if distance > BLOCK_DISTANCE:
                 self.direction = direction
             else:
                 # Mirror defender's lateral movement (y-axis)
                 lateral = pygame.Vector2(0, defender.pos.y - self.pos.y)
-                if lateral.length() > 1:
+                if lateral.length() > BLOCK_LATERAL_THRESHOLD:
                     self.direction = lateral.normalize()
                 else:
                     self.stop()
@@ -336,7 +344,7 @@ class Player(pygame.sprite.Sprite):
             target = self.man_coverage_target
             offset = target.pos - self.pos
             distance = offset.length()
-            shadow_distance = PLAYER_RADIUS * 3
+            shadow_distance = MAN_COVERAGE_SHADOW_DISTANCE
 
             if distance > shadow_distance:
                 direction = offset.normalize()
@@ -395,7 +403,7 @@ class Ball(pygame.sprite.Sprite):
 
     def update(self):
         self.set_pos(self.pos + self.velocity)
-        self.velocity *= 0.98  # Simulate friction
+        self.velocity *= BALL_FRICTION
 
 
 class Halo(pygame.sprite.Sprite):
@@ -460,7 +468,7 @@ def avoid_player_collisions(players, min_distance):
                 else:
                     p1_share = p2_share = 0.5  # Equal if both are still
 
-                repulse_vector = repulse * move_amount * 0.5
+                repulse_vector = repulse * move_amount * REPULSE_STRENGTH
                 p1.velocity += repulse_vector * p1_share
                 p2.velocity -= repulse_vector * p2_share
 
