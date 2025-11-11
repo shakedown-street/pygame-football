@@ -44,6 +44,7 @@ PLAYER_RADIUS = 6
 BALL_RADIUS = 3
 HALO_RADIUS = PLAYER_RADIUS * 1.5
 
+THROW_MAX_YARDS = 80
 THROW_SPEED = 9  # Higher value = faster throw
 THROW_MIN_FRAMES = 12  # Minimum frames for a short throw
 THROW_ARC_DIVISOR = 6  # Higher value = lower arc
@@ -210,12 +211,13 @@ class Field:
 
 
 class Player(pygame.sprite.Sprite):
-    def __init__(self, pos, color, speed=50, acceleration=50):
+    def __init__(self, pos, color, speed=50, acceleration=50, throw_power=50):
         super().__init__()
         self.direction = pygame.Vector2(0, 0)
         self.velocity = pygame.Vector2(0, 0)
         self.speed = speed
         self.acceleration = acceleration
+        self.throw_power = throw_power
         self.max_speed = PLAYER_MAX_SPEED * (self.speed / 100)
         self.pos = pos
         self.image = pygame.Surface(
@@ -403,9 +405,17 @@ class Ball(pygame.sprite.Sprite):
         )
         self.rect = self.image.get_rect(center=self.pos)
 
-    def throw_to(self, target_pos: pygame.Vector2):
+    def throw_to(self, target_pos: pygame.Vector2, throw_power=50):
         displacement = target_pos - self.pos
         distance = displacement.length()
+        max_distance = (THROW_MAX_YARDS * (throw_power / 100)) * YARD_LENGTH
+
+        if distance > max_distance:
+            direction = displacement.normalize()
+            target_pos = self.pos + direction * max_distance
+            displacement = target_pos - self.pos
+            distance = max_distance
+
         n_frames = max(THROW_MIN_FRAMES, int(distance / THROW_SPEED))
         self.velocity = displacement / n_frames
 
@@ -546,7 +556,7 @@ lg = Player(lg_pos.copy(), get_color("blue"), 70, 69)
 c = Player(c_pos.copy(), get_color("blue"), 66, 78)
 rg = Player(rg_pos.copy(), get_color("blue"), 76, 79)
 rt = Player(rt_pos.copy(), get_color("blue"), 71, 67)
-qb = Player(qb_pos.copy(), get_color("blue"), 88, 90)
+qb = Player(qb_pos.copy(), get_color("blue"), 88, 90, throw_power=93)
 hb = Player(hb_pos.copy(), get_color("blue"), 90, 91)
 te = Player(te_pos.copy(), get_color("blue"), 84, 87)
 wr_1 = Player(wr_1_pos.copy(), get_color("blue"), 90, 91)
@@ -649,7 +659,7 @@ while True:
                     qb.stop()
                     game.ball_carrier = None
                     mouse_pos = pygame.Vector2(pygame.mouse.get_pos())
-                    ball.throw_to(mouse_pos)
+                    ball.throw_to(mouse_pos, qb.throw_power)
             if event.key == pygame.K_r:
                 reset_play()
 
