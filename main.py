@@ -766,6 +766,41 @@ def reset_play():
 reset_play()
 
 
+def estimate_receiver_position(receiver: Player, frames: int) -> pygame.Vector2:
+    """Estimate where the receiver will be after 'frames' frames along their route."""
+    pos = receiver.pos.copy()
+    route = receiver.route[receiver.route_index :]
+    speed = receiver.max_speed
+    remaining_frames = frames
+
+    for i, point in enumerate(route):
+        direction = point - pos
+        distance = direction.length()
+        if distance == 0:
+            continue
+        direction = direction.normalize()
+        frames_to_point = int(distance / speed) if speed > 0 else remaining_frames
+        if frames_to_point >= remaining_frames:
+            # Will not reach this point within the remaining frames
+            pos += direction * speed * remaining_frames
+            return pos
+        else:
+            # Move to this point and continue to next
+            pos = point
+            remaining_frames -= frames_to_point
+
+    # If route ends before frames run out, keep moving in last direction
+    if route:
+        direction = (
+            (route[-1] - pos).normalize()
+            if (route[-1] - pos).length() > 0
+            else pygame.Vector2(0, 0)
+        )
+        pos += direction * speed * remaining_frames
+
+    return pos
+
+
 while True:
     screen.fill((0, 0, 0))
 
@@ -808,10 +843,14 @@ while True:
                     ball.throw_to(mouse_pos.copy(), qb)
                     landing_at = ball.landing_at
                     # Make nearest receiver run towards the ball
-                    nearest_receiver = min(
-                        receivers,
-                        key=lambda receiver: (receiver.pos - landing_at).length(),
-                    )
+                    flight_frames = ball.frames_left
+                    landing_at = ball.landing_at
+
+                    def future_distance(receiver):
+                        future_pos = estimate_receiver_position(receiver, flight_frames)
+                        return (future_pos - landing_at).length()
+
+                    nearest_receiver = min(receivers, key=future_distance)
                     min_frames = int(FRAME_RATE * 0.25)
                     max_frames = int(FRAME_RATE * 0.5)
                     reaction_frames = int(
@@ -820,7 +859,7 @@ while True:
                         * (max_frames - min_frames)
                     )
                     nearest_receiver.reaction_timer = reaction_frames
-                    nearest_receiver.reaction_target = ball.landing_at.copy()
+                    nearest_receiver.reaction_target = landing_at.copy()
                     print("Reaction frames:", reaction_frames)
             if event.key == pygame.K_r:
                 reset_play()
