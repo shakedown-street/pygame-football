@@ -52,7 +52,7 @@ THROW_MAX_YARDS = 80
 SHORT_THROW_DEVIATION_FACTOR = 0.1
 MEDIUM_THROW_DEVIATION_FACTOR = 0.2
 LONG_THROW_DEVIATION_FACTOR = 0.4
-THROW_SPEED = 9  # Higher value = faster throw
+THROW_SPEED = 8  # Higher value = faster throw
 THROW_MIN_FRAMES = 12  # Minimum frames for a short throw
 THROW_ARC_DIVISOR = 6  # Higher value = lower arc
 THROW_MIN_ARC = 30  # Minimum arc height (in yards)
@@ -224,6 +224,7 @@ class Player(pygame.sprite.Sprite):
         speed=50,
         acceleration=50,
         strength=50,
+        awareness=50,
         throw_power=50,
         short_throw_accuracy=50,
         medium_throw_accuracy=50,
@@ -235,6 +236,7 @@ class Player(pygame.sprite.Sprite):
         self.velocity = pygame.Vector2(0, 0)
         self.speed = speed
         self.acceleration = acceleration
+        self.awareness = awareness
         self.strength = strength
         self.throw_power = throw_power
         self.short_throw_accuracy = short_throw_accuracy
@@ -262,6 +264,8 @@ class Player(pygame.sprite.Sprite):
         self.route: list[pygame.Vector2] = []
         self.route_index = 0
         self.running_route = False
+        self.reaction_timer = 0
+        self.reaction_target: Optional[pygame.Vector2] = None
 
         # Defensive behavior
         self.pursue_target: Optional[Player] = None
@@ -274,6 +278,7 @@ class Player(pygame.sprite.Sprite):
     def reset(self):
         self.stop(True)
         self.reset_route()
+        self.reset_reaction()
         self.block_target = None
         self.pursue_target = None
         self.man_coverage_target = None
@@ -335,6 +340,10 @@ class Player(pygame.sprite.Sprite):
         self.route_index = 0
         self.running_route = False
 
+    def reset_reaction(self):
+        self.reaction_timer = 0
+        self.reaction_target = None
+
     def update_block(self, ball_carrier):
         if self.block_target:
             # Calculate the midpoint between defender and ball carrier
@@ -367,6 +376,24 @@ class Player(pygame.sprite.Sprite):
             else:
                 direction = direction.normalize()
                 self.direction = direction
+
+    def update_reaction(self):
+        if self.reaction_timer > 0:
+            self.reaction_timer -= 1
+            if self.reaction_timer == 0 and self.reaction_target is not None:
+                print("Reaction complete, starting route")
+                self.reset_route()
+                self.start_streak_route(
+                    yards=(self.reaction_target - self.pos).length() / YARD_LENGTH,
+                    angle=math.degrees(
+                        math.atan2(
+                            self.reaction_target.y - self.pos.y,
+                            self.reaction_target.x - self.pos.x,
+                        )
+                    ),
+                )
+                self.running_route = True
+                self.reaction_target = None
 
     def update_man_coverage(self):
         if self.man_coverage_target:
@@ -404,6 +431,7 @@ class Player(pygame.sprite.Sprite):
     def update(self):
         self.update_block(game.ball_carrier if game.ball_carrier else qb)
         self.update_route()
+        self.update_reaction()
         self.update_man_coverage()
         self.update_pursue_target()
         self.move()
@@ -416,6 +444,8 @@ class Ball(pygame.sprite.Sprite):
         self.z = 0
         self.velocity = pygame.Vector2(0, 0)
         self.z_velocity = 0
+        self.z_gravity = 0
+        self.landing_at = pygame.Vector2(0, 0)
         self.image = pygame.Surface((BALL_RADIUS * 2, BALL_RADIUS * 2), pygame.SRCALPHA)
         pygame.draw.circle(
             self.image,
@@ -431,14 +461,16 @@ class Ball(pygame.sprite.Sprite):
     def throw_to(self, target_pos: pygame.Vector2, player: Player):
         displacement = target_pos - self.pos
         distance = displacement.length()
-        max_distance = (THROW_MAX_YARDS * (player.throw_power / 100)) * YARD_LENGTH
 
+        # Cap max distance based on THROW_MAX_YARDS and player's throw power
+        max_distance = (THROW_MAX_YARDS * (player.throw_power / 100)) * YARD_LENGTH
         if distance > max_distance:
             direction = displacement.normalize()
             target_pos = self.pos + direction * max_distance
             displacement = target_pos - self.pos
             distance = max_distance
 
+        # Calculate throw accuracy and deviation
         if distance <= 20 * YARD_LENGTH:
             accuracy = player.short_throw_accuracy
             deviation_factor = SHORT_THROW_DEVIATION_FACTOR
@@ -456,6 +488,7 @@ class Ball(pygame.sprite.Sprite):
             f"throw_distance_yards={distance / YARD_LENGTH:.1f}, accuracy={accuracy}, angle_deviation={angle_deviation:.1f}"
         )
 
+        # Adjust target position based on deviation
         if distance > 0:
             direction = (target_pos - self.pos).normalize()
             direction = direction.rotate(angle_deviation)
@@ -463,9 +496,13 @@ class Ball(pygame.sprite.Sprite):
             displacement = target_pos - self.pos
             distance = displacement.length()
 
+        self.landing_at = target_pos.copy()
+
+        # Calculate number of frames for the throw
         n_frames = max(THROW_MIN_FRAMES, int(distance / THROW_SPEED))
         self.velocity = displacement / n_frames
 
+        # Calculate arc parameters
         arc_height = max(THROW_MIN_ARC, distance / THROW_ARC_DIVISOR)
         half_frames = n_frames / 2
         self.z = 0
@@ -482,6 +519,7 @@ class Ball(pygame.sprite.Sprite):
         self.velocity = pygame.Vector2(0, 0)
         self.z_velocity = 0
         self.z_gravity = 0
+        self.landing_at = pygame.Vector2(0, 0)
         self.frames_left = 0
 
     def set_pos(self, pos: pygame.Vector2):
@@ -499,17 +537,13 @@ class Ball(pygame.sprite.Sprite):
             self.z_velocity -= self.z_gravity
             self.frames_left -= 1
             if self.z < 0:
-                self.z = 0
-                self.z_velocity = 0
-                self.velocity = pygame.Vector2(0, 0)
+                self.stop()
             # print(
             #     f"frames_left={self.frames_left}, pos={self.pos}, z={self.z}, z_yards={self.z / YARD_LENGTH} z_velocity={self.z_velocity}"
             # )
         else:
             # Ball has landed, stop movement
-            self.z = 0
-            self.z_velocity = 0
-            self.velocity = pygame.Vector2(0, 0)
+            self.stop()
 
 
 class Halo(pygame.sprite.Sprite):
@@ -633,11 +667,11 @@ qb = Player(
     medium_throw_accuracy=82,
     long_throw_accuracy=87,
 )
-hb = Player(hb_pos.copy(), get_color("blue"), 90, 91, catching=66)
-te = Player(te_pos.copy(), get_color("blue"), 84, 87, catching=87)
-wr_1 = Player(wr_1_pos.copy(), get_color("blue"), 90, 91, catching=86)
-wr_2 = Player(wr_2_pos.copy(), get_color("blue"), 92, 94, catching=86)
-wr_3 = Player(wr_3_pos.copy(), get_color("blue"), 92, 91, catching=86)
+hb = Player(hb_pos.copy(), get_color("blue"), 90, 91, catching=66, awareness=84)
+te = Player(te_pos.copy(), get_color("blue"), 84, 87, catching=87, awareness=77)
+wr_1 = Player(wr_1_pos.copy(), get_color("blue"), 90, 91, catching=86, awareness=86)
+wr_2 = Player(wr_2_pos.copy(), get_color("blue"), 92, 94, catching=86, awareness=77)
+wr_3 = Player(wr_3_pos.copy(), get_color("blue"), 92, 91, catching=86, awareness=80)
 
 # Create defensive players
 lolb = Player(lolb_pos.copy(), get_color("orange"), 85, 87, strength=79)
@@ -735,7 +769,22 @@ while True:
                     qb.stop()
                     game.ball_carrier = None
                     mouse_pos = pygame.Vector2(pygame.mouse.get_pos())
-                    ball.throw_to(mouse_pos, qb)
+                    ball.throw_to(mouse_pos.copy(), qb)
+                    landing_at = ball.landing_at
+                    # Make nearest receiver run towards the ball
+                    nearest_receiver = min(
+                        receivers,
+                        key=lambda receiver: (receiver.pos - landing_at).length(),
+                    )
+                    min_frames = int(FRAME_RATE * 0.2)
+                    max_frames = int(FRAME_RATE * 0.5)
+                    reaction_frames = int(
+                        max_frames
+                        - (nearest_receiver.awareness / 100) * (max_frames - min_frames)
+                    )
+                    nearest_receiver.reaction_timer = reaction_frames
+                    nearest_receiver.reaction_target = ball.landing_at.copy()
+                    print("Reaction frames:", reaction_frames)
             if event.key == pygame.K_r:
                 reset_play()
 
@@ -747,6 +796,9 @@ while True:
         ball.set_pos(game.ball_carrier.pos.copy())
     else:
         ball.update()
+        if ball.z == 0:
+            for receiver in receivers:
+                receiver.reset_reaction()
         if ball.z > 0 and ball.z < CATCH_MAX_HEIGHT:
             for receiver in receivers:
                 catch_rect = pygame.Rect(
@@ -758,6 +810,7 @@ while True:
 
                 if ball.rect.colliderect(catch_rect):
                     ball.stop()
+                    receiver.reset_reaction()
                     # Even a perfectly rated receiver can drop a pass occasionally
                     random_roll = random.randint(1, 101)
                     print(f"roll={random_roll} catching={receiver.catching}")
@@ -767,8 +820,6 @@ while True:
                         for defender in defense:
                             defender.pursue_target = receiver
                     else:
-                        for player in all_players:
-                            player.reset_route()
                         print("Dropped pass!")
 
     # if game.ball_carrier:
@@ -802,6 +853,22 @@ while True:
         )
 
         pygame.draw.rect(screen, get_color("white", 100), catch_rect, 1)
+
+    # Draw receiver routes
+    for receiver in receivers:
+        if receiver.running_route:
+            for i in range(receiver.route_index, len(receiver.route)):
+                start_pos = (
+                    receiver.pos if i == receiver.route_index else receiver.route[i - 1]
+                )
+                end_pos = receiver.route[i]
+                pygame.draw.line(
+                    screen,
+                    get_color("yellow", 400),
+                    start_pos,
+                    end_pos,
+                    1,
+                )
 
     screen.blit(ball.image, ball.rect)
     screen.blit(halo.image, halo.rect)
