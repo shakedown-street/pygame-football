@@ -27,6 +27,13 @@ FIELD_HASH_LENGTH = YARD_LENGTH * (2 / 3)
 FIELD_HASH_DISTANCE = YARD_LENGTH * 6.16  # NFL standard 6.16
 GOAL_POST_WIDTH = YARD_LENGTH * 6.16
 
+PLAYER_RADIUS = 6
+BALL_RADIUS = 3
+HALO_RADIUS = PLAYER_RADIUS * 1.5
+
+COLLISION_DISTANCE = PLAYER_RADIUS * 2.2
+COLLISION_NUDGE = 0.2
+REPULSE_STRENGTH = 0.7
 
 # Approximate max speed as 4.2 seconds to run 40 yards
 ACCELERATION_RATE = 0.6
@@ -40,25 +47,20 @@ else:
     denom = n - (1 - (1 - ACCELERATION_RATE) ** n) / ACCELERATION_RATE
     PLAYER_MAX_SPEED = FORTY_YARDS / denom
 
-PLAYER_RADIUS = 6
-BALL_RADIUS = 3
-HALO_RADIUS = PLAYER_RADIUS * 1.5
-
 THROW_MAX_YARDS = 80
 THROW_SPEED = 9  # Higher value = faster throw
 THROW_MIN_FRAMES = 12  # Minimum frames for a short throw
 THROW_ARC_DIVISOR = 6  # Higher value = lower arc
 THROW_MIN_ARC = 30  # Minimum arc height (in yards)
 
-CATCH_THRESHOLD = YARD_LENGTH * 2.25  # Max height for a catch
-
-REPULSE_STRENGTH = 0.5
+CATCH_MAX_HEIGHT = YARD_LENGTH * 2.25  # Max height for a catch
+CATCH_RADIUS = PLAYER_RADIUS * 2.5
+PERFECT_CATCHING = False  # If True, catching stat has no effect
 
 BLOCK_POINT_FACTOR = 0.3
 BLOCK_DISTANCE = PLAYER_RADIUS * 3
 BLOCK_LATERAL_THRESHOLD = 1
 
-COLLISION_DISTANCE = PLAYER_RADIUS * 2
 PURSUE_LEAD_FACTOR = 0.6  # Determines how far ahead to lead when pursuing a target
 MAN_COVERAGE_SHADOW_DISTANCE = PLAYER_RADIUS * 3
 
@@ -211,13 +213,24 @@ class Field:
 
 
 class Player(pygame.sprite.Sprite):
-    def __init__(self, pos, color, speed=50, acceleration=50, throw_power=50):
+    def __init__(
+        self,
+        pos,
+        color,
+        speed=50,
+        acceleration=50,
+        strength=50,
+        throw_power=50,
+        catching=50,
+    ):
         super().__init__()
         self.direction = pygame.Vector2(0, 0)
         self.velocity = pygame.Vector2(0, 0)
         self.speed = speed
         self.acceleration = acceleration
+        self.strength = strength
         self.throw_power = throw_power
+        self.catching = catching
         self.max_speed = PLAYER_MAX_SPEED * (self.speed / 100)
         self.pos = pos
         self.image = pygame.Surface(
@@ -430,9 +443,20 @@ class Ball(pygame.sprite.Sprite):
         #     f"n_frames={n_frames}, velocity={self.velocity}, arc_height={arc_height}, z={self.z}, z_velocity={self.z_velocity}, z_gravity={self.z_gravity}"
         # )
 
+    def stop(self):
+        self.z = 0
+        self.velocity = pygame.Vector2(0, 0)
+        self.z_velocity = 0
+        self.z_gravity = 0
+        self.frames_left = 0
+
     def set_pos(self, pos: pygame.Vector2):
         self.pos = pos
         self.rect.center = self.pos
+
+    def reset_to(self, pos: pygame.Vector2):
+        self.stop()
+        self.set_pos(pos)
 
     def update(self):
         if getattr(self, "frames_left", 0) > 0:
@@ -505,16 +529,25 @@ def avoid_player_collisions(players, min_distance):
                 # Calculate repulsion direction
                 repulse = offset.normalize()
                 # Add a small random "bobble" nudge
-                angle = random.uniform(-0.5, 0.5)
+                angle = random.uniform(-1 * COLLISION_NUDGE, COLLISION_NUDGE)
                 repulse = repulse.rotate(math.degrees(angle))
                 move_amount = (min_distance - dist) / 2
-                # Make faster moving player push more
-                total_velocity = p1.velocity.length() + p2.velocity.length()
-                if total_velocity > 0:
-                    p1_share = p2.velocity.length() / total_velocity
-                    p2_share = p1.velocity.length() / total_velocity
+
+                p1_factor = p1.velocity.length() * p1.strength
+                p2_factor = p2.velocity.length() * p2.strength
+                total_factor = p1_factor + p2_factor
+
+                if total_factor > 0:
+                    p1_share = p2_factor / total_factor
+                    p2_share = p1_factor / total_factor
                 else:
-                    p1_share = p2_share = 0.5  # Equal if both are still
+                    # If both are still, use only strength
+                    total_strength = p1.strength + p2.strength
+                    if total_strength > 0:
+                        p1_share = p2.strength / total_strength
+                        p2_share = p1.strength / total_strength
+                    else:
+                        p1_share = p2_share = 0.5
 
                 repulse_vector = repulse * move_amount * REPULSE_STRENGTH
                 p1.velocity += repulse_vector * p1_share
@@ -551,23 +584,23 @@ fs_pos = pygame.Vector2(get_yard_x(game.ball_position + 11), FIELD_CENTER.y - 60
 ss_pos = pygame.Vector2(get_yard_x(game.ball_position + 11), FIELD_CENTER.y + 60)
 
 # Create offensive players
-lt = Player(lt_pos.copy(), get_color("blue"), 75, 76)
-lg = Player(lg_pos.copy(), get_color("blue"), 70, 69)
-c = Player(c_pos.copy(), get_color("blue"), 66, 78)
-rg = Player(rg_pos.copy(), get_color("blue"), 76, 79)
-rt = Player(rt_pos.copy(), get_color("blue"), 71, 67)
+lt = Player(lt_pos.copy(), get_color("blue"), 75, 76, strength=87)
+lg = Player(lg_pos.copy(), get_color("blue"), 70, 69, strength=82)
+c = Player(c_pos.copy(), get_color("blue"), 66, 78, strength=79)
+rg = Player(rg_pos.copy(), get_color("blue"), 76, 79, strength=95)
+rt = Player(rt_pos.copy(), get_color("blue"), 71, 67, strength=88)
 qb = Player(qb_pos.copy(), get_color("blue"), 88, 90, throw_power=93)
-hb = Player(hb_pos.copy(), get_color("blue"), 90, 91)
-te = Player(te_pos.copy(), get_color("blue"), 84, 87)
-wr_1 = Player(wr_1_pos.copy(), get_color("blue"), 90, 91)
-wr_2 = Player(wr_2_pos.copy(), get_color("blue"), 92, 94)
-wr_3 = Player(wr_3_pos.copy(), get_color("blue"), 92, 91)
+hb = Player(hb_pos.copy(), get_color("blue"), 90, 91, catching=66)
+te = Player(te_pos.copy(), get_color("blue"), 84, 87, catching=87)
+wr_1 = Player(wr_1_pos.copy(), get_color("blue"), 90, 91, catching=86)
+wr_2 = Player(wr_2_pos.copy(), get_color("blue"), 92, 94, catching=86)
+wr_3 = Player(wr_3_pos.copy(), get_color("blue"), 92, 91, catching=86)
 
 # Create defensive players
-lolb = Player(lolb_pos.copy(), get_color("orange"), 85, 87)
-ldt = Player(ldt_pos.copy(), get_color("orange"), 78, 80)
-rdt = Player(rdt_pos.copy(), get_color("orange"), 76, 79)
-rolb = Player(rolb_pos.copy(), get_color("orange"), 88, 92)
+lolb = Player(lolb_pos.copy(), get_color("orange"), 85, 87, strength=79)
+ldt = Player(ldt_pos.copy(), get_color("orange"), 78, 80, strength=90)
+rdt = Player(rdt_pos.copy(), get_color("orange"), 76, 79, strength=94)
+rolb = Player(rolb_pos.copy(), get_color("orange"), 88, 92, strength=82)
 cb_1 = Player(cb_1_pos.copy(), get_color("orange"), 94, 92)
 cb_2 = Player(cb_2_pos.copy(), get_color("orange"), 93, 92)
 cb_3 = Player(cb_3_pos.copy(), get_color("orange"), 91, 95)
@@ -584,7 +617,8 @@ game.ball_carrier = c
 
 oline = pygame.sprite.Group(lt, lg, c, rg, rt)
 dline = pygame.sprite.Group(lolb, ldt, rdt, rolb)
-offense = pygame.sprite.Group(oline, qb, hb, wr_1, wr_2, wr_3, te)
+receivers = pygame.sprite.Group(wr_1, wr_2, wr_3, te, hb)
+offense = pygame.sprite.Group(oline, qb, receivers)
 defense = pygame.sprite.Group(dline, cb_1, cb_2, cb_3, mlb_1, mlb_2, fs, ss)
 all_players = pygame.sprite.Group(offense, defense)
 
@@ -615,8 +649,7 @@ def reset_play():
     fs.reset_to(fs_pos.copy())
     ss.reset_to(ss_pos.copy())
     # reset ball position
-    ball.set_pos(c.pos.copy())
-    ball.velocity = pygame.Vector2(0, 0)
+    ball.reset_to(c_pos.copy())
     game.ball_carrier = c
 
 
@@ -640,9 +673,9 @@ while True:
                     cb_2.man_coverage_target = wr_2
                     wr_3.start_cut_route(yards=12, angle=0, cut_yards=35, cut_angle=45)
                     cb_3.man_coverage_target = wr_3
-                    hb.start_cut_route(yards=8, angle=-40, cut_yards=20, cut_angle=-75)
+                    hb.start_cut_route(yards=8, angle=-40, cut_yards=18, cut_angle=-75)
                     mlb_1.man_coverage_target = hb
-                    te.start_streak_route(yards=25, angle=75)
+                    te.start_streak_route(yards=20, angle=75)
                     mlb_2.man_coverage_target = te
                     # make all oline puruse nearest defender
                     for blocker in oline:
@@ -671,14 +704,49 @@ while True:
         ball.set_pos(game.ball_carrier.pos.copy())
     else:
         ball.update()
-        if ball.z > 0 and ball.z < CATCH_THRESHOLD:
-            for wr in [wr_1, wr_2, wr_3, hb, te]:
-                if halo.rect.colliderect(wr.rect):
-                    game.ball_carrier = wr
-                    wr.reset_route()
-                    for defender in defense:
-                        defender.pursue_target = wr
-                    ball.velocity = pygame.Vector2(0, 0)
+        if ball.z > 0 and ball.z < CATCH_MAX_HEIGHT:
+            for receiver in receivers:
+                catch_rect = pygame.Rect(
+                    receiver.pos.x - CATCH_RADIUS,
+                    receiver.pos.y - CATCH_RADIUS,
+                    CATCH_RADIUS * 2,
+                    CATCH_RADIUS * 2,
+                )
+
+                if ball.rect.colliderect(catch_rect):
+                    ball.stop()
+                    # Even a perfectly rated receiver can drop a pass occasionally
+                    random_roll = random.randint(1, 101)
+                    # 1/3 chance for a second chance
+                    second_chance_roll = random.randint(1, 3)
+                    print(
+                        f"roll={random_roll} second_chance_roll={second_chance_roll} catching={receiver.catching}"
+                    )
+                    if (
+                        random_roll <= receiver.catching or second_chance_roll == 1
+                    ) or PERFECT_CATCHING:
+                        game.ball_carrier = receiver
+                        receiver.reset_route()
+                        for defender in defense:
+                            defender.pursue_target = receiver
+                    else:
+                        print("Dropped pass!")
+
+    # if game.ball_carrier:
+    #     for defender in defense:
+    #         if defender.rect.colliderect(game.ball_carrier.rect):
+    #             yards_gained = (
+    #                 game.ball_carrier.pos.x / YARD_LENGTH - 10
+    #             ) - game.ball_position
+    #             print(f"Tackle! {yards_gained:.1f} yards gained.")
+    #             reset_play()
+
+    # endzone_rect = pygame.Rect(
+    #     FIELD_WIDTH - YARD_LENGTH * 10, 0, YARD_LENGTH * 10, FIELD_HEIGHT
+    # )
+    # if game.ball_carrier and endzone_rect.colliderect(game.ball_carrier.rect):
+    #     print("Touchdown!")
+    #     reset_play()
 
     # Make halo follow ball
     halo.set_pos(ball.pos.copy())
