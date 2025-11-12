@@ -48,17 +48,21 @@ else:
     PLAYER_MAX_SPEED = FORTY_YARDS / denom
 
 THROW_MAX_YARDS = 80
+# Higher value = less accurate
+SHORT_THROW_DEVIATION_FACTOR = 0.1
+MEDIUM_THROW_DEVIATION_FACTOR = 0.2
+LONG_THROW_DEVIATION_FACTOR = 0.4
 THROW_SPEED = 9  # Higher value = faster throw
 THROW_MIN_FRAMES = 12  # Minimum frames for a short throw
 THROW_ARC_DIVISOR = 6  # Higher value = lower arc
 THROW_MIN_ARC = 30  # Minimum arc height (in yards)
 
 CATCH_MAX_HEIGHT = YARD_LENGTH * 2.25  # Max height for a catch
-CATCH_RADIUS = PLAYER_RADIUS * 2.5
+CATCH_RADIUS = PLAYER_RADIUS * 2
 PERFECT_CATCHING = False  # If True, catching stat has no effect
 
 BLOCK_POINT_FACTOR = 0.3
-BLOCK_DISTANCE = PLAYER_RADIUS * 3
+BLOCK_DISTANCE = PLAYER_RADIUS * 2.5
 BLOCK_LATERAL_THRESHOLD = 1
 
 PURSUE_LEAD_FACTOR = 0.6  # Determines how far ahead to lead when pursuing a target
@@ -221,6 +225,9 @@ class Player(pygame.sprite.Sprite):
         acceleration=50,
         strength=50,
         throw_power=50,
+        short_throw_accuracy=50,
+        medium_throw_accuracy=50,
+        long_throw_accuracy=50,
         catching=50,
     ):
         super().__init__()
@@ -230,6 +237,9 @@ class Player(pygame.sprite.Sprite):
         self.acceleration = acceleration
         self.strength = strength
         self.throw_power = throw_power
+        self.short_throw_accuracy = short_throw_accuracy
+        self.medium_throw_accuracy = medium_throw_accuracy
+        self.long_throw_accuracy = long_throw_accuracy
         self.catching = catching
         self.max_speed = PLAYER_MAX_SPEED * (self.speed / 100)
         self.pos = pos
@@ -418,16 +428,40 @@ class Ball(pygame.sprite.Sprite):
         )
         self.rect = self.image.get_rect(center=self.pos)
 
-    def throw_to(self, target_pos: pygame.Vector2, throw_power=50):
+    def throw_to(self, target_pos: pygame.Vector2, player: Player):
         displacement = target_pos - self.pos
         distance = displacement.length()
-        max_distance = (THROW_MAX_YARDS * (throw_power / 100)) * YARD_LENGTH
+        max_distance = (THROW_MAX_YARDS * (player.throw_power / 100)) * YARD_LENGTH
 
         if distance > max_distance:
             direction = displacement.normalize()
             target_pos = self.pos + direction * max_distance
             displacement = target_pos - self.pos
             distance = max_distance
+
+        if distance <= 20 * YARD_LENGTH:
+            accuracy = player.short_throw_accuracy
+            deviation_factor = SHORT_THROW_DEVIATION_FACTOR
+        elif distance <= 40 * YARD_LENGTH:
+            accuracy = player.medium_throw_accuracy
+            deviation_factor = MEDIUM_THROW_DEVIATION_FACTOR
+        else:
+            accuracy = player.long_throw_accuracy
+            deviation_factor = LONG_THROW_DEVIATION_FACTOR
+
+        max_deviation = (100 - accuracy) * deviation_factor
+        angle_deviation = random.uniform(-max_deviation, max_deviation)
+
+        print(
+            f"throw_distance_yards={distance / YARD_LENGTH:.1f}, accuracy={accuracy}, angle_deviation={angle_deviation:.1f}"
+        )
+
+        if distance > 0:
+            direction = (target_pos - self.pos).normalize()
+            direction = direction.rotate(angle_deviation)
+            target_pos = self.pos + direction * distance
+            displacement = target_pos - self.pos
+            distance = displacement.length()
 
         n_frames = max(THROW_MIN_FRAMES, int(distance / THROW_SPEED))
         self.velocity = displacement / n_frames
@@ -589,7 +623,16 @@ lg = Player(lg_pos.copy(), get_color("blue"), 70, 69, strength=82)
 c = Player(c_pos.copy(), get_color("blue"), 66, 78, strength=79)
 rg = Player(rg_pos.copy(), get_color("blue"), 76, 79, strength=95)
 rt = Player(rt_pos.copy(), get_color("blue"), 71, 67, strength=88)
-qb = Player(qb_pos.copy(), get_color("blue"), 88, 90, throw_power=93)
+qb = Player(
+    qb_pos.copy(),
+    get_color("blue"),
+    88,
+    90,
+    throw_power=93,
+    short_throw_accuracy=89,
+    medium_throw_accuracy=82,
+    long_throw_accuracy=87,
+)
 hb = Player(hb_pos.copy(), get_color("blue"), 90, 91, catching=66)
 te = Player(te_pos.copy(), get_color("blue"), 84, 87, catching=87)
 wr_1 = Player(wr_1_pos.copy(), get_color("blue"), 90, 91, catching=86)
@@ -692,7 +735,7 @@ while True:
                     qb.stop()
                     game.ball_carrier = None
                     mouse_pos = pygame.Vector2(pygame.mouse.get_pos())
-                    ball.throw_to(mouse_pos, qb.throw_power)
+                    ball.throw_to(mouse_pos, qb)
             if event.key == pygame.K_r:
                 reset_play()
 
@@ -717,19 +760,15 @@ while True:
                     ball.stop()
                     # Even a perfectly rated receiver can drop a pass occasionally
                     random_roll = random.randint(1, 101)
-                    # 1/3 chance for a second chance
-                    second_chance_roll = random.randint(1, 3)
-                    print(
-                        f"roll={random_roll} second_chance_roll={second_chance_roll} catching={receiver.catching}"
-                    )
-                    if (
-                        random_roll <= receiver.catching or second_chance_roll == 1
-                    ) or PERFECT_CATCHING:
+                    print(f"roll={random_roll} catching={receiver.catching}")
+                    if random_roll <= receiver.catching or PERFECT_CATCHING:
                         game.ball_carrier = receiver
                         receiver.reset_route()
                         for defender in defense:
                             defender.pursue_target = receiver
                     else:
+                        for player in all_players:
+                            player.reset_route()
                         print("Dropped pass!")
 
     # if game.ball_carrier:
@@ -753,6 +792,16 @@ while True:
 
     field.draw(screen)
     all_players.draw(screen)
+
+    for player in receivers:
+        catch_rect = pygame.Rect(
+            player.pos.x - CATCH_RADIUS,
+            player.pos.y - CATCH_RADIUS,
+            CATCH_RADIUS * 2,
+            CATCH_RADIUS * 2,
+        )
+
+        pygame.draw.rect(screen, get_color("white", 100), catch_rect, 1)
 
     screen.blit(ball.image, ball.rect)
     screen.blit(halo.image, halo.rect)
