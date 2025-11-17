@@ -1,3 +1,5 @@
 __pycache__
 venv
-tools
+tools/drop-api
+data/nfl_rosters
+tools/roster-generator/output

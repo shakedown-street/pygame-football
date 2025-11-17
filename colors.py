@@ -1,6 +1,13 @@
+from random import random
+
+
 def hex_to_rgb(hex_str):
     hex_str = hex_str.lstrip("#")
     return tuple(int(hex_str[i : i + 2], 16) for i in (0, 2, 4))
+
+
+def rgb_to_hex(rgb):
+    return "#{:02x}{:02x}{:02x}".format(*rgb)
 
 
 BLACK = hex_to_rgb("#000000")
@@ -343,7 +350,17 @@ COLORS = {
 }
 
 
-def get_color(name, shade=500):
+def get_color_names():
+    """Retrieve a list of available color names."""
+    return list(COLORS.keys())
+
+
+def get_color_group(name):
+    """Retrieve a color group by name."""
+    return COLORS.get(name.lower())
+
+
+def get_color(name: str, shade=500):
     """Retrieve a color by name and shade."""
     color_group = COLORS.get(name.lower())
     if isinstance(color_group, tuple):
@@ -351,3 +368,37 @@ def get_color(name, shade=500):
     if color_group:
         return color_group[str(shade)]
     return BLACK
+
+
+def get_color_hex(name: str, shade=500):
+    """Retrieve a color in hex format by name and shade."""
+    rgb = get_color(name, shade)
+    return rgb_to_hex(rgb)
+
+
+def lighten_color(rgb: tuple[int, int, int], factor: float):
+    """Lighten a color by a given factor."""
+    r, g, b = rgb
+    r = int(r + (255 - r) * factor)
+    g = int(g + (255 - g) * factor)
+    b = int(b + (255 - b) * factor)
+    return (r, g, b)
+
+
+def darken_color(rgb: tuple[int, int, int], factor: float):
+    """Darken a color by a given factor."""
+    r, g, b = rgb
+    r = int(r * (1 - factor))
+    g = int(g * (1 - factor))
+    b = int(b * (1 - factor))
+    return (r, g, b)
+
+
+def get_random_color():
+    """Retrieve a random color from the COLORS dictionary."""
+    color_name = random.choice(list(COLORS.keys()))
+    color_group = COLORS[color_name]
+    if isinstance(color_group, tuple):
+        return color_group
+    shade = random.choice(list(color_group.keys()))
+    return color_group[shade]

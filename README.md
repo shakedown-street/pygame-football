@@ -1,14 +1,21 @@
 # pygame-football
 
-## Goals:
+## Features
 
-- Snap: Press space to start play
-- Movement: Use arrow keys to move the ball carrier
-- Passing: If the ball carrier is the QB, press space to throw the ball towards the mouse pointer
-- Catching: If the ball collides with a receiver or defender, they catch it
-- Tackling: If a defender collides with the ball carrier, the play ends
-- Possession: Ball starts on the 20 yard line for each possession
-- No kickoffs, no first downs: just try to score
-- After play: Reset for the next possession
-- WRs run specific routes, cornerbacks try to stay close to WR
-- Defensive line engages nearest blocker and tries to break through to the ball carrier
+- Field rendering and basic player sprites
+- Ball throwing and catching logic
+- Basic route running and reaction mechanics
+- Some collision and blocking logic
+- Simple play reset and basic formations
+
+## Goals
+
+- Play calling and playbooks (offense/defense)
+- Down, distance, scoring, clock, and possession management
+- Full tackling and broken tackle logic
+- Special teams (kicking, punting, returns)
+- AI for all positions and situations
+- Game flow (quarters, halftime, overtime)
+- Penalties, substitutions, injuries
+- User interface (scoreboard, menus, play selection)
+- Animations, sound, polish

@@ -1,5 +1,8 @@
 pygame
 
+# for fake data generation
+Faker
+
 # for ratings scraping
 requests
 beautifulsoup4
