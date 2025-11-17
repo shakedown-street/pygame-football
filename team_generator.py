@@ -8,391 +8,445 @@ dir = Path(__file__).parent
 
 fake = Faker()
 
-GENERAL_STATS = [
-    "speed",
-    "acceleration",
-    "strength",
-    "agility",
-    "awareness",
-    "jumping",
-    "injury",
-    "stamina",
-    "toughness",
-]
 
-BALL_CARRIER_STATS = [
-    "carrying",
-    "break_tackle",
-    "trucking",
-    "change_of_direction",
-    "bc_vision",
-    "stiff_arm",
-    "spin_move",
-    "juke_move",
-    "break_sack",
-    "kick_return",
-]
+stat_groups = {
+    "general": ["awareness", "jumping", "injury", "stamina", "toughness"],
+    "speed": ["speed", "acceleration"],
+    "power": ["strength", "break_tackle", "trucking", "stiff_arm"],
+    "agility": ["agility", "change_of_direction", "spin_move", "juke_move"],
+    "ball_carrier": ["carrying", "bc_vision", "break_sack"],
+    "route_running": [
+        "short_route_running",
+        "medium_route_running",
+        "deep_route_running",
+        "release",
+    ],
+    "catching": ["catching", "spectacular_catch", "catch_in_traffic"],
+    "blocking": [
+        "run_block",
+        "pass_block",
+        "impact_blocking",
+        "run_block_power",
+        "run_block_finesse",
+        "pass_block_power",
+        "pass_block_finesse",
+        "lead_block",
+    ],
+    "passing": [
+        "throw_power",
+        "throw_under_pressure",
+        "throw_accuracy_short",
+        "throw_accuracy_mid",
+        "throw_accuracy_deep",
+        "throw_on_the_run",
+        "play_action",
+    ],
+    "defense_general": ["pursuit", "play_recognition"],
+    "tackling": ["tackle", "hit_power"],
+    "defense_skill": ["power_moves", "finesse_moves", "block_shedding"],
+    "zone_coverage": ["zone_coverage"],
+    "man_coverage": ["man_coverage", "press"],
+    "kicking": ["kick_power", "kick_accuracy"],
+    "kick_return": ["kick_return"],
+}
 
-BLOCKING_STATS = [
-    "run_block",
-    "pass_block",
-    "impact_blocking",
-    "run_block_power",
-    "run_block_finesse",
-    "pass_block_power",
-    "pass_block_finesse",
-    "lead_block",
-]
-
-PASSING_STATS = [
-    "throw_power",
-    "throw_under_pressure",
-    "throw_accuracy_short",
-    "throw_accuracy_mid",
-    "throw_accuracy_deep",
-    "throw_on_the_run",
-    "play_action",
-]
-
-DEFENSE_STATS = [
-    "tackle",
-    "power_moves",
-    "finesse_moves",
-    "block_shedding",
-    "pursuit",
-    "play_recognition",
-    "man_coverage",
-    "zone_coverage",
-    "hit_power",
-    "press",
-]
-
-RECEIVING_STATS = [
-    "catching",
-    "spectacular_catch",
-    "catch_in_traffic",
-    "short_route_running",
-    "medium_route_running",
-    "deep_route_running",
-    "release",
-]
-
-KICKING_STATS = [
-    "kick_power",
-    "kick_accuracy",
-]
-
+ELITE_POTENTIAL = (85, 99)
+GREAT_POTENTIAL = (85, 95)
+GOOD_POTENTIAL = (75, 85)
+AVERAGE_POTENTIAL = (65, 75)
+POOR_POTENTIAL = (45, 65)
+ABYSMAL_POTENTIAL = (20, 45)
 
 POSITIONS = {
     "QB": {
         "height": (72, 78),
         "weight": (190, 240),
-        "primary_stats": GENERAL_STATS + PASSING_STATS,
-        "secondary_stats": BALL_CARRIER_STATS,
-        "jersey_number_ranges": [
-            (1, 19),
-        ],
+        "stat_ranges": {
+            "general": (75, 99),
+            "speed": (65, 95),
+            "power": (65, 80),
+            "agility": (65, 90),
+            "ball_carrier": (45, 85),
+            "route_running": (20, 65),
+            "catching": (20, 65),
+            "blocking": ABYSMAL_POTENTIAL,
+            "passing": (75, 99),
+            "defense_general": ABYSMAL_POTENTIAL,
+            "tackling": ABYSMAL_POTENTIAL,
+            "defense_skill": ABYSMAL_POTENTIAL,
+            "zone_coverage": ABYSMAL_POTENTIAL,
+            "man_coverage": ABYSMAL_POTENTIAL,
+            "kicking": ABYSMAL_POTENTIAL,
+            "kick_return": ABYSMAL_POTENTIAL,
+        },
+        "jersey_number_ranges": [(1, 19)],
     },
     "HB": {
         "height": (68, 74),
         "weight": (190, 230),
-        "primary_stats": GENERAL_STATS + BALL_CARRIER_STATS,
-        "secondary_stats": RECEIVING_STATS + BLOCKING_STATS,
-        "jersey_number_ranges": [
-            (0, 39),
-        ],
+        "stat_ranges": {
+            "general": (65, 95),
+            "speed": (80, 99),
+            "power": (60, 90),
+            "agility": (80, 99),
+            "ball_carrier": (75, 99),
+            "route_running": (55, 85),
+            "catching": (55, 85),
+            "blocking": (40, 70),
+            "passing": POOR_POTENTIAL,
+            "defense_general": POOR_POTENTIAL,
+            "tackling": POOR_POTENTIAL,
+            "defense_skill": POOR_POTENTIAL,
+            "zone_coverage": POOR_POTENTIAL,
+            "man_coverage": POOR_POTENTIAL,
+            "kicking": ABYSMAL_POTENTIAL,
+            "kick_return": (65, 99),
+        },
+        "jersey_number_ranges": [(0, 39)],
     },
     "FB": {
         "height": (70, 76),
         "weight": (230, 270),
-        "primary_stats": GENERAL_STATS + BLOCKING_STATS,
-        "secondary_stats": BALL_CARRIER_STATS + RECEIVING_STATS,
-        "jersey_number_ranges": [
-            (0, 49),
-        ],
+        "stat_ranges": {
+            "general": (65, 95),
+            "speed": (60, 80),
+            "power": (75, 99),
+            "agility": (60, 80),
+            "ball_carrier": (60, 85),
+            "route_running": (40, 70),
+            "catching": (40, 70),
+            "blocking": (75, 99),
+            "passing": POOR_POTENTIAL,
+            "defense_general": POOR_POTENTIAL,
+            "tackling": POOR_POTENTIAL,
+            "defense_skill": POOR_POTENTIAL,
+            "zone_coverage": POOR_POTENTIAL,
+            "man_coverage": POOR_POTENTIAL,
+            "kicking": ABYSMAL_POTENTIAL,
+            "kick_return": POOR_POTENTIAL,
+        },
+        "jersey_number_ranges": [(0, 49)],
     },
     "TE": {
         "height": (74, 80),
         "weight": (240, 280),
-        "primary_stats": GENERAL_STATS + RECEIVING_STATS + BALL_CARRIER_STATS,
-        "secondary_stats": BLOCKING_STATS,
-        "jersey_number_ranges": [
-            (0, 49),
-            (80, 89),
-        ],
+        "stat_ranges": {
+            "general": (65, 95),
+            "speed": (65, 85),
+            "power": (70, 95),
+            "agility": (65, 85),
+            "ball_carrier": (60, 85),
+            "route_running": (60, 85),
+            "catching": (70, 99),
+            "blocking": (65, 95),
+            "passing": POOR_POTENTIAL,
+            "defense_general": POOR_POTENTIAL,
+            "tackling": POOR_POTENTIAL,
+            "defense_skill": POOR_POTENTIAL,
+            "zone_coverage": POOR_POTENTIAL,
+            "man_coverage": POOR_POTENTIAL,
+            "kicking": ABYSMAL_POTENTIAL,
+            "kick_return": POOR_POTENTIAL,
+        },
+        "jersey_number_ranges": [(0, 49), (80, 89)],
     },
     "WR": {
         "height": (68, 74),
         "weight": (180, 220),
-        "primary_stats": GENERAL_STATS + RECEIVING_STATS + BALL_CARRIER_STATS,
-        "secondary_stats": [],
-        "jersey_number_ranges": [
-            (0, 19),
-            (80, 89),
-        ],
+        "stat_ranges": {
+            "general": (65, 95),
+            "speed": ELITE_POTENTIAL,
+            "power": (55, 80),
+            "agility": (80, 99),
+            "ball_carrier": (65, 90),
+            "route_running": (75, 99),
+            "catching": (75, 99),
+            "blocking": (30, 60),
+            "passing": POOR_POTENTIAL,
+            "defense_general": POOR_POTENTIAL,
+            "tackling": POOR_POTENTIAL,
+            "defense_skill": POOR_POTENTIAL,
+            "zone_coverage": POOR_POTENTIAL,
+            "man_coverage": POOR_POTENTIAL,
+            "kicking": ABYSMAL_POTENTIAL,
+            "kick_return": (65, 99),
+        },
+        "jersey_number_ranges": [(0, 19), (80, 89)],
     },
     "C": {
         "height": (72, 78),
         "weight": (280, 320),
-        "primary_stats": GENERAL_STATS + BLOCKING_STATS,
-        "secondary_stats": [],
-        "jersey_number_ranges": [
-            (50, 79),
-        ],
+        "stat_ranges": {
+            "general": (65, 95),
+            "speed": (50, 70),
+            "power": (80, 99),
+            "agility": (55, 75),
+            "ball_carrier": (30, 60),
+            "route_running": ABYSMAL_POTENTIAL,
+            "catching": ABYSMAL_POTENTIAL,
+            "blocking": (80, 99),
+            "passing": ABYSMAL_POTENTIAL,
+            "defense_general": POOR_POTENTIAL,
+            "tackling": POOR_POTENTIAL,
+            "defense_skill": POOR_POTENTIAL,
+            "zone_coverage": POOR_POTENTIAL,
+            "man_coverage": POOR_POTENTIAL,
+            "kicking": ABYSMAL_POTENTIAL,
+            "kick_return": ABYSMAL_POTENTIAL,
+        },
+        "jersey_number_ranges": [(50, 79)],
     },
-    "LG": {
+    "OG": {
         "height": (72, 78),
         "weight": (280, 320),
-        "primary_stats": GENERAL_STATS + BLOCKING_STATS,
-        "secondary_stats": [],
-        "jersey_number_ranges": [
-            (50, 79),
-        ],
+        "stat_ranges": {
+            "general": (65, 95),
+            "speed": (50, 70),
+            "power": (80, 99),
+            "agility": (55, 75),
+            "ball_carrier": (30, 60),
+            "route_running": ABYSMAL_POTENTIAL,
+            "catching": ABYSMAL_POTENTIAL,
+            "blocking": (80, 99),
+            "passing": ABYSMAL_POTENTIAL,
+            "defense_general": POOR_POTENTIAL,
+            "tackling": POOR_POTENTIAL,
+            "defense_skill": POOR_POTENTIAL,
+            "zone_coverage": POOR_POTENTIAL,
+            "man_coverage": POOR_POTENTIAL,
+            "kicking": ABYSMAL_POTENTIAL,
+            "kick_return": ABYSMAL_POTENTIAL,
+        },
+        "jersey_number_ranges": [(50, 79)],
     },
-    "LT": {
+    "OT": {
         "height": (72, 78),
         "weight": (280, 320),
-        "primary_stats": GENERAL_STATS + BLOCKING_STATS,
-        "secondary_stats": [],
-        "jersey_number_ranges": [
-            (50, 79),
-        ],
-    },
-    "RG": {
-        "height": (72, 78),
-        "weight": (280, 320),
-        "primary_stats": GENERAL_STATS + BLOCKING_STATS,
-        "secondary_stats": [],
-        "jersey_number_ranges": [
-            (50, 79),
-        ],
-    },
-    "RT": {
-        "height": (72, 78),
-        "weight": (280, 320),
-        "primary_stats": GENERAL_STATS + BLOCKING_STATS,
-        "secondary_stats": [],
-        "jersey_number_ranges": [
-            (50, 79),
-        ],
+        "stat_ranges": {
+            "general": (65, 95),
+            "speed": (50, 70),
+            "power": (80, 99),
+            "agility": (55, 75),
+            "ball_carrier": (30, 60),
+            "route_running": ABYSMAL_POTENTIAL,
+            "catching": ABYSMAL_POTENTIAL,
+            "blocking": (80, 99),
+            "passing": ABYSMAL_POTENTIAL,
+            "defense_general": POOR_POTENTIAL,
+            "tackling": POOR_POTENTIAL,
+            "defense_skill": POOR_POTENTIAL,
+            "zone_coverage": POOR_POTENTIAL,
+            "man_coverage": POOR_POTENTIAL,
+            "kicking": ABYSMAL_POTENTIAL,
+            "kick_return": ABYSMAL_POTENTIAL,
+        },
+        "jersey_number_ranges": [(50, 79)],
     },
     "DT": {
         "height": (72, 78),
         "weight": (280, 320),
-        "primary_stats": GENERAL_STATS + DEFENSE_STATS,
-        "secondary_stats": [],
-        "jersey_number_ranges": [
-            (50, 79),
-            (90, 99),
-        ],
+        "stat_ranges": {
+            "general": (65, 95),
+            "speed": (55, 75),
+            "power": (80, 99),
+            "agility": (55, 75),
+            "ball_carrier": ABYSMAL_POTENTIAL,
+            "route_running": ABYSMAL_POTENTIAL,
+            "catching": ABYSMAL_POTENTIAL,
+            "blocking": (70, 95),
+            "passing": ABYSMAL_POTENTIAL,
+            "defense_general": (65, 95),
+            "tackling": (75, 99),
+            "defense_skill": (75, 99),
+            "zone_coverage": POOR_POTENTIAL,
+            "man_coverage": POOR_POTENTIAL,
+            "kicking": ABYSMAL_POTENTIAL,
+            "kick_return": ABYSMAL_POTENTIAL,
+        },
+        "jersey_number_ranges": [(50, 79), (90, 99)],
     },
-    "LEDG": {
+    "DE": {
         "height": (72, 78),
         "weight": (240, 280),
-        "primary_stats": GENERAL_STATS + DEFENSE_STATS,
-        "secondary_stats": [],
-        "jersey_number_ranges": [
-            (0, 59),
-            (90, 99),
-        ],
+        "stat_ranges": {
+            "general": (65, 95),
+            "speed": (65, 85),
+            "power": (75, 99),
+            "agility": (65, 85),
+            "ball_carrier": (30, 60),
+            "route_running": ABYSMAL_POTENTIAL,
+            "catching": ABYSMAL_POTENTIAL,
+            "blocking": (60, 85),
+            "passing": ABYSMAL_POTENTIAL,
+            "defense_general": (65, 95),
+            "tackling": (70, 95),
+            "defense_skill": (70, 95),
+            "zone_coverage": (40, 70),
+            "man_coverage": (40, 70),
+            "kicking": ABYSMAL_POTENTIAL,
+            "kick_return": POOR_POTENTIAL,
+        },
+        "jersey_number_ranges": [(0, 59), (90, 99)],
     },
-    "MIKE": {
+    "LB": {
         "height": (72, 78),
         "weight": (240, 280),
-        "primary_stats": GENERAL_STATS + DEFENSE_STATS,
-        "secondary_stats": [],
-        "jersey_number_ranges": [
-            (0, 59),
-            (90, 99),
-        ],
-    },
-    "REDG": {
-        "height": (72, 78),
-        "weight": (240, 280),
-        "primary_stats": GENERAL_STATS + DEFENSE_STATS,
-        "secondary_stats": [],
-        "jersey_number_ranges": [
-            (0, 59),
-            (90, 99),
-        ],
-    },
-    "SAM": {
-        "height": (72, 78),
-        "weight": (240, 280),
-        "primary_stats": GENERAL_STATS + DEFENSE_STATS,
-        "secondary_stats": [],
-        "jersey_number_ranges": [
-            (0, 59),
-            (90, 99),
-        ],
-    },
-    "WILL": {
-        "height": (72, 78),
-        "weight": (240, 280),
-        "primary_stats": GENERAL_STATS + DEFENSE_STATS,
-        "secondary_stats": [],
-        "jersey_number_ranges": [
-            (0, 59),
-            (90, 99),
-        ],
+        "stat_ranges": {
+            "general": (70, 99),
+            "speed": (65, 85),
+            "power": (75, 99),
+            "agility": (65, 85),
+            "ball_carrier": (30, 60),
+            "route_running": ABYSMAL_POTENTIAL,
+            "catching": ABYSMAL_POTENTIAL,
+            "blocking": (60, 85),
+            "passing": ABYSMAL_POTENTIAL,
+            "defense_general": (70, 99),
+            "tackling": (75, 99),
+            "defense_skill": (70, 95),
+            "zone_coverage": (50, 85),
+            "man_coverage": (50, 85),
+            "kicking": ABYSMAL_POTENTIAL,
+            "kick_return": POOR_POTENTIAL,
+        },
+        "jersey_number_ranges": [(0, 59), (90, 99)],
     },
     "CB": {
         "height": (68, 74),
         "weight": (180, 210),
-        "primary_stats": GENERAL_STATS + DEFENSE_STATS,
-        "secondary_stats": RECEIVING_STATS,
-        "jersey_number_ranges": [
-            (0, 49),
-        ],
+        "stat_ranges": {
+            "general": (65, 95),
+            "speed": ELITE_POTENTIAL,
+            "power": (50, 75),
+            "agility": (80, 99),
+            "ball_carrier": (55, 80),
+            "route_running": (40, 70),
+            "catching": (55, 85),
+            "blocking": ABYSMAL_POTENTIAL,
+            "passing": ABYSMAL_POTENTIAL,
+            "defense_general": (65, 95),
+            "tackling": (55, 85),
+            "defense_skill": (65, 95),
+            "zone_coverage": (70, 99),
+            "man_coverage": (70, 99),
+            "kicking": ABYSMAL_POTENTIAL,
+            "kick_return": (60, 95),
+        },
+        "jersey_number_ranges": [(0, 49)],
     },
     "FS": {
         "height": (70, 76),
         "weight": (190, 220),
-        "primary_stats": GENERAL_STATS + DEFENSE_STATS,
-        "secondary_stats": RECEIVING_STATS,
-        "jersey_number_ranges": [
-            (0, 49),
-        ],
+        "stat_ranges": {
+            "general": (65, 95),
+            "speed": (75, 95),
+            "power": (55, 80),
+            "agility": (75, 95),
+            "ball_carrier": (55, 80),
+            "route_running": (40, 70),
+            "catching": (55, 85),
+            "blocking": ABYSMAL_POTENTIAL,
+            "passing": ABYSMAL_POTENTIAL,
+            "defense_general": (65, 95),
+            "tackling": (60, 90),
+            "defense_skill": (60, 90),
+            "zone_coverage": (70, 99),
+            "man_coverage": (60, 90),
+            "kicking": ABYSMAL_POTENTIAL,
+            "kick_return": (60, 90),
+        },
+        "jersey_number_ranges": [(0, 49)],
     },
     "SS": {
         "height": (70, 76),
         "weight": (190, 220),
-        "primary_stats": GENERAL_STATS + DEFENSE_STATS,
-        "secondary_stats": RECEIVING_STATS,
-        "jersey_number_ranges": [
-            (0, 49),
-        ],
+        "stat_ranges": {
+            "general": (65, 95),
+            "speed": (70, 90),
+            "power": (60, 90),
+            "agility": (70, 90),
+            "ball_carrier": (55, 80),
+            "route_running": (40, 70),
+            "catching": (55, 85),
+            "blocking": ABYSMAL_POTENTIAL,
+            "passing": ABYSMAL_POTENTIAL,
+            "defense_general": (65, 95),
+            "tackling": (65, 95),
+            "defense_skill": (65, 95),
+            "zone_coverage": (60, 90),
+            "man_coverage": (60, 90),
+            "kicking": ABYSMAL_POTENTIAL,
+            "kick_return": (60, 90),
+        },
+        "jersey_number_ranges": [(0, 49)],
     },
     "K": {
         "height": (68, 74),
         "weight": (180, 220),
-        "primary_stats": GENERAL_STATS + KICKING_STATS,
-        "secondary_stats": [],
-        "jersey_number_ranges": [
-            (0, 19),
-        ],
+        "stat_ranges": {
+            "general": (60, 90),
+            "speed": (40, 65),
+            "power": (40, 65),
+            "agility": (40, 65),
+            "ball_carrier": ABYSMAL_POTENTIAL,
+            "route_running": ABYSMAL_POTENTIAL,
+            "catching": ABYSMAL_POTENTIAL,
+            "blocking": ABYSMAL_POTENTIAL,
+            "passing": ABYSMAL_POTENTIAL,
+            "defense_general": POOR_POTENTIAL,
+            "tackling": POOR_POTENTIAL,
+            "defense_skill": POOR_POTENTIAL,
+            "zone_coverage": POOR_POTENTIAL,
+            "man_coverage": POOR_POTENTIAL,
+            "kicking": (75, 99),
+            "kick_return": ABYSMAL_POTENTIAL,
+        },
+        "jersey_number_ranges": [(0, 19)],
     },
     "P": {
         "height": (68, 74),
         "weight": (180, 220),
-        "primary_stats": GENERAL_STATS + KICKING_STATS,
-        "secondary_stats": [],
-        "jersey_number_ranges": [
-            (0, 19),
-        ],
+        "stat_ranges": {
+            "general": (60, 90),
+            "speed": (40, 65),
+            "power": (40, 65),
+            "agility": (40, 65),
+            "ball_carrier": ABYSMAL_POTENTIAL,
+            "route_running": ABYSMAL_POTENTIAL,
+            "catching": ABYSMAL_POTENTIAL,
+            "blocking": ABYSMAL_POTENTIAL,
+            "passing": ABYSMAL_POTENTIAL,
+            "defense_general": POOR_POTENTIAL,
+            "tackling": POOR_POTENTIAL,
+            "defense_skill": POOR_POTENTIAL,
+            "zone_coverage": POOR_POTENTIAL,
+            "man_coverage": POOR_POTENTIAL,
+            "kicking": (75, 99),
+            "kick_return": ABYSMAL_POTENTIAL,
+        },
+        "jersey_number_ranges": [(0, 19)],
     },
 }
-
-
-def speed_range(position: str) -> tuple[int, int]:
-    position_info = POSITIONS.get(position, {})
-    height_range = position_info.get("height", (68, 80))
-    weight_range = position_info.get("weight", (160, 300))
-
-    fast_positions = {
-        "HB",
-        "TE",
-        "WR",
-        "CB",
-        "FS",
-        "SS",
-    }
-    mid_speed_positions = {
-        "QB",
-        "FB",
-        "LEDG",
-        "MIKE",
-        "REDG",
-        "SAM",
-        "WILL",
-    }
-
-    if position in fast_positions:
-        base_speed = 90
-    elif position in mid_speed_positions:
-        base_speed = 83
-    else:
-        base_speed = 75
-
-    # Softer penalties
-    min_speed = max(
-        50, base_speed - (weight_range[1] - 180) // 8 - (height_range[0] - 70) // 2
-    )
-    max_speed = min(
-        99,
-        base_speed - (weight_range[0] - 180) // 14 - (height_range[1] - 70) // 3 + 12,
-    )
-
-    # Ensure min_speed <= max_speed
-    if min_speed > max_speed:
-        min_speed, max_speed = max_speed, min_speed
-
-    return (min_speed, max_speed)
-
-
-for position in POSITIONS.keys():
-    POSITIONS[position]["speed_range"] = speed_range(position)
-    print(f"{position}: {POSITIONS[position]['speed_range']}")
 
 
 def generate_stat_ratings(position) -> dict:
     stats = {}
 
     position_info = POSITIONS.get(position, {})
-    primary_stats = set(position_info.get("primary_stats", []))
-    secondary_stats = set(position_info.get("secondary_stats", []))
+    stat_ranges = position_info.get("stat_ranges", {})
 
-    # Gather all possible stats
-    all_stats = (
-        set(GENERAL_STATS)
-        | set(BALL_CARRIER_STATS)
-        | set(BLOCKING_STATS)
-        | set(PASSING_STATS)
-        | set(DEFENSE_STATS)
-        | set(RECEIVING_STATS)
-        | set(KICKING_STATS)
-    )
-
-    for stat in all_stats:
-        if stat in primary_stats:
-            stats[stat] = fake.random_int(min=75, max=99)
-        elif stat in secondary_stats:
-            stats[stat] = fake.random_int(min=60, max=74)
-        else:
-            stats[stat] = fake.random_int(min=20, max=59)
-
-    # Apply speed range
-    min_speed, max_speed = position_info.get("speed_range", (60, 99))
-    stats["speed"] = fake.random_int(min=min_speed, max=max_speed)
-
-    # Acceleration correlated with speed
-    speed = stats["speed"]
-    accel_min = max(50, speed - 10)
-    accel_max = min(99, speed + 5)
-    stats["acceleration"] = fake.random_int(min=accel_min, max=accel_max)
+    for group, (min_val, max_val) in stat_ranges.items():
+        for stat in stat_groups.get(group, []):
+            stats[stat] = fake.random_int(min=min_val, max=max_val)
 
     return stats
 
 
 def calculate_overall(position: str, stats: dict) -> int:
-    """
-    Calculates a player's overall rating based on their position's primary and secondary stats.
-    """
-    position_info = POSITIONS.get(position, {})
-    primary_stats = position_info.get("primary_stats", [])
-    secondary_stats = position_info.get("secondary_stats", [])
-
-    primary_values = [stats[s] for s in primary_stats if s in stats]
-    secondary_values = [stats[s] for s in secondary_stats if s in stats]
-
-    values_sum = sum(primary_values) + sum(secondary_values)
-    values_count = len(primary_values) + len(secondary_values)
-
-    if values_count == 0:
-        return 0.0
-
-    overall = values_sum / values_count
-    return round(overall)
+    # really simply, divide their total stat value by the number of stats
+    total = sum(stats.values())
+    overall = total // len(stats)
+    return overall
 
 
 def generate_player_data(position: str) -> dict:
@@ -442,19 +496,29 @@ def write_to_output_file(team_name: str, data: list[dict]):
 
 TEAMS = [
     {
-        "name": "Thunderhawks",
-        "primary": get_color("blue", 700),
-        "secondary": get_color("amber", 400),
+        "name": "Blazewings",
+        "primary": get_color("amber", 500),
+        "secondary": get_color("neutral", 800),
     },
     {
-        "name": "Warforge",
-        "primary": get_color("slate", 800),
-        "secondary": get_color("red", 500),
+        "name": "Frostguards",
+        "primary": get_color("cyan", 700),
+        "secondary": get_color("slate", 200),
     },
     {
-        "name": "Nightstalkers",
-        "primary": get_color("zinc", 900),
-        "secondary": get_color("purple", 500),
+        "name": "Grimtalons",
+        "primary": get_color("rose", 800),
+        "secondary": get_color("slate", 300),
+    },
+    {
+        "name": "Hollowfire",
+        "primary": get_color("amber", 700),
+        "secondary": get_color("red", 400),
+    },
+    {
+        "name": "Ironclaws",
+        "primary": get_color("stone", 800),
+        "secondary": get_color("teal", 300),
     },
     {
         "name": "Ironwolves",
@@ -462,9 +526,9 @@ TEAMS = [
         "secondary": get_color("emerald", 400),
     },
     {
-        "name": "Stormriders",
-        "primary": get_color("indigo", 700),
-        "secondary": get_color("sky", 400),
+        "name": "Nightstalkers",
+        "primary": get_color("zinc", 900),
+        "secondary": get_color("purple", 500),
     },
     {
         "name": "Razorbacks",
@@ -472,14 +536,9 @@ TEAMS = [
         "secondary": get_color("stone", 300),
     },
     {
-        "name": "Blazewings",
-        "primary": get_color("orange", 600),
-        "secondary": get_color("yellow", 400),
-    },
-    {
-        "name": "Frostguards",
-        "primary": get_color("cyan", 700),
-        "secondary": get_color("slate", 200),
+        "name": "Riftborn",
+        "primary": get_color("violet", 700),
+        "secondary": get_color("emerald", 300),
     },
     {
         "name": "Shadowhorns",
@@ -492,9 +551,19 @@ TEAMS = [
         "secondary": get_color("blue", 300),
     },
     {
-        "name": "Ironclaws",
-        "primary": get_color("stone", 800),
-        "secondary": get_color("teal", 300),
+        "name": "Stormforge",
+        "primary": get_color("purple", 700),
+        "secondary": get_color("sky", 300),
+    },
+    {
+        "name": "Stormriders",
+        "primary": get_color("indigo", 700),
+        "secondary": get_color("sky", 400),
+    },
+    {
+        "name": "Thunderhawks",
+        "primary": get_color("blue", 700),
+        "secondary": get_color("amber", 400),
     },
     {
         "name": "Viperstrike",
@@ -502,24 +571,9 @@ TEAMS = [
         "secondary": get_color("lime", 300),
     },
     {
-        "name": "Hollowfire",
-        "primary": get_color("amber", 700),
-        "secondary": get_color("red", 400),
-    },
-    {
-        "name": "Stormforge",
-        "primary": get_color("purple", 700),
-        "secondary": get_color("sky", 300),
-    },
-    {
-        "name": "Grimtalons",
-        "primary": get_color("rose", 800),
-        "secondary": get_color("slate", 400),
-    },
-    {
-        "name": "Riftborn",
-        "primary": get_color("violet", 700),
-        "secondary": get_color("emerald", 300),
+        "name": "Warforge",
+        "primary": get_color("slate", 800),
+        "secondary": get_color("red", 500),
     },
 ]
 
@@ -535,22 +589,19 @@ if __name__ == "__main__":
             "TE": 3,
             "WR": 5,
             "C": 2,
-            "LG": 2,
-            "LT": 2,
-            "RG": 2,
-            "RT": 2,
+            "OG": 4,
+            "OT": 4,
             "DT": 4,
-            "LEDG": 2,
-            "MIKE": 2,
-            "REDG": 2,
-            "SAM": 2,
-            "WILL": 2,
+            "DE": 4,
+            "LB": 6,
             "CB": 4,
             "FS": 2,
             "SS": 2,
             "K": 1,
             "P": 1,
         }
+
+        print(sum(position_counts.values()))
 
         used_numbers = set()
         for position, count in position_counts.items():
