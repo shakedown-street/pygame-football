@@ -34,8 +34,15 @@ from config import (
     YARD_LENGTH,
 )
 from field import Field
-from rosters import get_by_position
+from team import Team, load_teams
 from utils import get_yard_x
+
+TEAMS = load_teams()
+
+
+def get_team(name: str):
+    return [team for team in TEAMS if team.name == name][0]
+
 
 pygame.init()
 screen = pygame.display.set_mode((WIDTH, HEIGHT))
@@ -51,7 +58,7 @@ play_selected = 0
 class Player(pygame.sprite.Sprite):
     def __init__(
         self,
-        color,
+        team: Team,
         info={},
         stats={},
     ):
@@ -59,7 +66,6 @@ class Player(pygame.sprite.Sprite):
         self.pos = pygame.Vector2(0, 0)
         self.direction = pygame.Vector2(0, 0)
         self.velocity = pygame.Vector2(0, 0)
-        self.color = color
         self.info = info
         self.stats = stats
         self.max_speed = PLAYER_MAX_SPEED * (self.stats.get("speed", 50) / 100)
@@ -79,17 +85,20 @@ class Player(pygame.sprite.Sprite):
         # Draw player circle
         pygame.draw.circle(
             self.image,
-            get_color("black"),
+            team.secondary_color,
             (PLAYER_RADIUS, PLAYER_RADIUS),
             PLAYER_RADIUS,
         )
         pygame.draw.circle(
-            self.image, color, (PLAYER_RADIUS, PLAYER_RADIUS), PLAYER_RADIUS - 1
+            self.image,
+            team.primary_color,
+            (PLAYER_RADIUS, PLAYER_RADIUS),
+            PLAYER_RADIUS - 1,
         )
         # Draw jersey number
         font = pygame.font.SysFont(None, PLAYER_RADIUS * 2)
         text = font.render(
-            str(self.info.get("jersey_number", 0)), True, get_color("white")
+            str(self.info.get("jersey_number", 0)), True, team.secondary_color
         )
         text_rect = text.get_rect(center=(PLAYER_RADIUS, PLAYER_RADIUS))
         self.image.blit(text, text_rect)
@@ -262,29 +271,8 @@ class Player(pygame.sprite.Sprite):
         return f"{name} ({number}) [overall={overall} speed={speed} acceleration={accel} strength={strength} agility={agility} max_speed={max_speed:.2f}]"
 
     @classmethod
-    def from_roster(cls, team_code: str, position: str, index=0):
-        color_map = {
-            "bulldogs": get_color("red"),
-            "cougars": get_color("orange"),
-            "crusaders": get_color("amber"),
-            "dragons": get_color("yellow"),
-            "falcons": get_color("lime"),
-            "knights": get_color("green"),
-            "mustangs": get_color("emerald"),
-            "phantoms": get_color("teal"),
-            "pirates": get_color("cyan"),
-            "raptors": get_color("sky"),
-            "rebels": get_color("blue"),
-            "sharks": get_color("indigo"),
-            "spartans": get_color("violet"),
-            "stallions": get_color("purple"),
-            "titans": get_color("fuchsia"),
-            "vipers": get_color("pink"),
-            "warriors": get_color("rose"),
-            "wildcats": get_color("slate"),
-        }
-        color = color_map.get(team_code, get_color("black"))
-        data = get_by_position(team_code, position)[index]
+    def from_roster(cls, team: Team, position: str, index=0):
+        data = team.get_players_by_position(position)[index]
 
         info = {
             "first_name": data.get("first_name", ""),
@@ -299,11 +287,12 @@ class Player(pygame.sprite.Sprite):
         }
         stats = data.get("stats", {})
         player_data = {
+            "team": team,
             "info": info,
             "stats": stats,
         }
 
-        return cls(color, **player_data)
+        return cls(**player_data)
 
 
 class Ball(pygame.sprite.Sprite):
@@ -535,7 +524,7 @@ wr_3_pos = pygame.Vector2(get_yard_x(ball_on_yard - 2), FIELD_CENTER.y - 80)
 # ss_pos = pygame.Vector2(get_yard_x(ball_on_yard + 11), FIELD_CENTER.y + 60)
 
 # Create offensive players
-offense_team = "rebels"
+offense_team = get_team("Warforge")
 
 lt = Player.from_roster(offense_team, "LT")
 lg = Player.from_roster(offense_team, "LG")

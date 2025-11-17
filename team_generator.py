@@ -2,6 +2,8 @@ from pathlib import Path
 
 from faker import Faker
 
+from colors import get_color
+
 dir = Path(__file__).parent
 
 fake = Faker()
@@ -428,7 +430,7 @@ def generate_player_data(position: str) -> dict:
 
 def write_to_output_file(team_name: str, data: list[dict]):
     team_name = team_name.replace(" ", "_").lower()
-    output_dir = dir / "output"
+    output_dir = dir / "data" / "custom_teams"
     output_dir.mkdir(exist_ok=True)
 
     output_file = output_dir / f"{team_name}.json"
@@ -438,31 +440,93 @@ def write_to_output_file(team_name: str, data: list[dict]):
         json.dump(data, f, indent=4)
 
 
-TEAM_NAMES = [
-    "Wildcats",
-    "Titans",
-    "Dragons",
-    "Stallions",
-    "Vipers",
-    "Warriors",
-    "Raptors",
-    "Bulldogs",
-    "Pirates",
-    "Knights",
-    "Sharks",
-    "Falcons",
-    "Spartans",
-    "Phantoms",
-    "Crusaders",
-    "Mustangs",
-    "Rebels",
-    "Cougars",
+TEAMS = [
+    {
+        "name": "Thunderhawks",
+        "primary": get_color("blue", 700),
+        "secondary": get_color("amber", 400),
+    },
+    {
+        "name": "Warforge",
+        "primary": get_color("slate", 800),
+        "secondary": get_color("red", 500),
+    },
+    {
+        "name": "Nightstalkers",
+        "primary": get_color("zinc", 900),
+        "secondary": get_color("purple", 500),
+    },
+    {
+        "name": "Ironwolves",
+        "primary": get_color("gray", 800),
+        "secondary": get_color("emerald", 400),
+    },
+    {
+        "name": "Stormriders",
+        "primary": get_color("indigo", 700),
+        "secondary": get_color("sky", 400),
+    },
+    {
+        "name": "Razorbacks",
+        "primary": get_color("rose", 700),
+        "secondary": get_color("stone", 300),
+    },
+    {
+        "name": "Blazewings",
+        "primary": get_color("orange", 600),
+        "secondary": get_color("yellow", 400),
+    },
+    {
+        "name": "Frostguards",
+        "primary": get_color("cyan", 700),
+        "secondary": get_color("slate", 200),
+    },
+    {
+        "name": "Shadowhorns",
+        "primary": get_color("fuchsia", 600),
+        "secondary": get_color("gray", 200),
+    },
+    {
+        "name": "Steelsharks",
+        "primary": get_color("zinc", 700),
+        "secondary": get_color("blue", 300),
+    },
+    {
+        "name": "Ironclaws",
+        "primary": get_color("stone", 800),
+        "secondary": get_color("teal", 300),
+    },
+    {
+        "name": "Viperstrike",
+        "primary": get_color("green", 700),
+        "secondary": get_color("lime", 300),
+    },
+    {
+        "name": "Hollowfire",
+        "primary": get_color("amber", 700),
+        "secondary": get_color("red", 400),
+    },
+    {
+        "name": "Stormforge",
+        "primary": get_color("purple", 700),
+        "secondary": get_color("sky", 300),
+    },
+    {
+        "name": "Grimtalons",
+        "primary": get_color("rose", 800),
+        "secondary": get_color("slate", 400),
+    },
+    {
+        "name": "Riftborn",
+        "primary": get_color("violet", 700),
+        "secondary": get_color("emerald", 300),
+    },
 ]
 
 
 if __name__ == "__main__":
-    for team_name in TEAM_NAMES:
-        roster = []
+    for team in TEAMS:
+        players = []
         # Simple roster composition
         position_counts = {
             "QB": 2,
@@ -509,6 +573,7 @@ if __name__ == "__main__":
                 used_numbers.add(jersey_number)
                 player_data = generate_player_data(position)
                 player_data["jersey_number"] = jersey_number
-                roster.append(player_data)
+                players.append(player_data)
 
-        write_to_output_file(team_name, roster)
+        team["players"] = players
+        write_to_output_file(team.get("name"), team)

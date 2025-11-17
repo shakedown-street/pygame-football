@@ -3,4 +3,3 @@ venv
 
 data/nfl_rosters
 tools/drop-api
-tools/roster-generator/output
