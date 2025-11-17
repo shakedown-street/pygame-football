@@ -80,6 +80,16 @@ POSITIONS = {
             "kick_return": ABYSMAL_POTENTIAL,
         },
         "jersey_number_ranges": [(1, 19)],
+        "overall_ignore_stat_groups": [
+            "blocking",
+            "defense_general",
+            "tackling",
+            "defense_skill",
+            "zone_coverage",
+            "man_coverage",
+            "kicking",
+            "kick_return",
+        ],
     },
     "HB": {
         "height": (68, 74),
@@ -103,6 +113,16 @@ POSITIONS = {
             "kick_return": (65, 99),
         },
         "jersey_number_ranges": [(0, 39)],
+        "overall_ignore_stat_groups": [
+            "passing",
+            "blocking",
+            "defense_general",
+            "tackling",
+            "defense_skill",
+            "zone_coverage",
+            "man_coverage",
+            "kicking",
+        ],
     },
     "FB": {
         "height": (70, 76),
@@ -126,6 +146,16 @@ POSITIONS = {
             "kick_return": POOR_POTENTIAL,
         },
         "jersey_number_ranges": [(0, 49)],
+        "overall_ignore_stat_groups": [
+            "passing",
+            "defense_general",
+            "tackling",
+            "defense_skill",
+            "zone_coverage",
+            "man_coverage",
+            "kicking",
+            "kick_return",
+        ],
     },
     "TE": {
         "height": (74, 80),
@@ -149,6 +179,16 @@ POSITIONS = {
             "kick_return": POOR_POTENTIAL,
         },
         "jersey_number_ranges": [(0, 49), (80, 89)],
+        "overall_ignore_stat_groups": [
+            "passing",
+            "defense_general",
+            "tackling",
+            "defense_skill",
+            "zone_coverage",
+            "man_coverage",
+            "kicking",
+            "kick_return",
+        ],
     },
     "WR": {
         "height": (68, 74),
@@ -172,6 +212,16 @@ POSITIONS = {
             "kick_return": (65, 99),
         },
         "jersey_number_ranges": [(0, 19), (80, 89)],
+        "overall_ignore_stat_groups": [
+            "passing",
+            "blocking",
+            "defense_general",
+            "tackling",
+            "defense_skill",
+            "zone_coverage",
+            "man_coverage",
+            "kicking",
+        ],
     },
     "C": {
         "height": (72, 78),
@@ -195,6 +245,19 @@ POSITIONS = {
             "kick_return": ABYSMAL_POTENTIAL,
         },
         "jersey_number_ranges": [(50, 79)],
+        "overall_ignore_stat_groups": [
+            "passing",
+            "ball_carrier",
+            "route_running",
+            "catching",
+            "defense_general",
+            "tackling",
+            "defense_skill",
+            "zone_coverage",
+            "man_coverage",
+            "kicking",
+            "kick_return",
+        ],
     },
     "OG": {
         "height": (72, 78),
@@ -218,6 +281,19 @@ POSITIONS = {
             "kick_return": ABYSMAL_POTENTIAL,
         },
         "jersey_number_ranges": [(50, 79)],
+        "overall_ignore_stat_groups": [
+            "passing",
+            "ball_carrier",
+            "route_running",
+            "catching",
+            "defense_general",
+            "tackling",
+            "defense_skill",
+            "zone_coverage",
+            "man_coverage",
+            "kicking",
+            "kick_return",
+        ],
     },
     "OT": {
         "height": (72, 78),
@@ -241,6 +317,19 @@ POSITIONS = {
             "kick_return": ABYSMAL_POTENTIAL,
         },
         "jersey_number_ranges": [(50, 79)],
+        "overall_ignore_stat_groups": [
+            "passing",
+            "ball_carrier",
+            "route_running",
+            "catching",
+            "defense_general",
+            "tackling",
+            "defense_skill",
+            "zone_coverage",
+            "man_coverage",
+            "kicking",
+            "kick_return",
+        ],
     },
     "DT": {
         "height": (72, 78),
@@ -264,6 +353,17 @@ POSITIONS = {
             "kick_return": ABYSMAL_POTENTIAL,
         },
         "jersey_number_ranges": [(50, 79), (90, 99)],
+        "overall_ignore_stat_groups": [
+            "passing",
+            "ball_carrier",
+            "route_running",
+            "catching",
+            "blocking",
+            "zone_coverage",
+            "man_coverage",
+            "kicking",
+            "kick_return",
+        ],
     },
     "DE": {
         "height": (72, 78),
@@ -287,6 +387,17 @@ POSITIONS = {
             "kick_return": POOR_POTENTIAL,
         },
         "jersey_number_ranges": [(0, 59), (90, 99)],
+        "overall_ignore_stat_groups": [
+            "passing",
+            "ball_carrier",
+            "route_running",
+            "catching",
+            "blocking",
+            "zone_coverage",
+            "man_coverage",
+            "kicking",
+            "kick_return",
+        ],
     },
     "LB": {
         "height": (72, 78),
@@ -310,6 +421,15 @@ POSITIONS = {
             "kick_return": POOR_POTENTIAL,
         },
         "jersey_number_ranges": [(0, 59), (90, 99)],
+        "overall_ignore_stat_groups": [
+            "passing",
+            "ball_carrier",
+            "route_running",
+            "catching",
+            "blocking",
+            "kicking",
+            "kick_return",
+        ],
     },
     "CB": {
         "height": (68, 74),
@@ -333,6 +453,13 @@ POSITIONS = {
             "kick_return": (60, 95),
         },
         "jersey_number_ranges": [(0, 49)],
+        "overall_ignore_stat_groups": [
+            "passing",
+            "blocking",
+            "ball_carrier",
+            "route_running",
+            "kicking",
+        ],
     },
     "FS": {
         "height": (70, 76),
@@ -356,6 +483,13 @@ POSITIONS = {
             "kick_return": (60, 90),
         },
         "jersey_number_ranges": [(0, 49)],
+        "overall_ignore_stat_groups": [
+            "passing",
+            "blocking",
+            "ball_carrier",
+            "route_running",
+            "kicking",
+        ],
     },
     "SS": {
         "height": (70, 76),
@@ -379,6 +513,13 @@ POSITIONS = {
             "kick_return": (60, 90),
         },
         "jersey_number_ranges": [(0, 49)],
+        "overall_ignore_stat_groups": [
+            "passing",
+            "blocking",
+            "ball_carrier",
+            "route_running",
+            "kicking",
+        ],
     },
     "K": {
         "height": (68, 74),
@@ -402,6 +543,19 @@ POSITIONS = {
             "kick_return": ABYSMAL_POTENTIAL,
         },
         "jersey_number_ranges": [(0, 19)],
+        "overall_ignore_stat_groups": [
+            "passing",
+            "blocking",
+            "ball_carrier",
+            "route_running",
+            "catching",
+            "defense_general",
+            "tackling",
+            "defense_skill",
+            "zone_coverage",
+            "man_coverage",
+            "kick_return",
+        ],
     },
     "P": {
         "height": (68, 74),
@@ -425,6 +579,19 @@ POSITIONS = {
             "kick_return": ABYSMAL_POTENTIAL,
         },
         "jersey_number_ranges": [(0, 19)],
+        "overall_ignore_stat_groups": [
+            "passing",
+            "blocking",
+            "ball_carrier",
+            "route_running",
+            "catching",
+            "defense_general",
+            "tackling",
+            "defense_skill",
+            "zone_coverage",
+            "man_coverage",
+            "kick_return",
+        ],
     },
 }
 
@@ -443,9 +610,15 @@ def generate_stat_ratings(position) -> dict:
 
 
 def calculate_overall(position: str, stats: dict) -> int:
-    # really simply, divide their total stat value by the number of stats
-    total = sum(stats.values())
-    overall = total // len(stats)
+    ignore_groups = POSITIONS.get(position, {}).get("overall_ignore_stat_groups", [])
+    ignore_stats = set()
+    for group in ignore_groups:
+        ignore_stats.update(stat_groups.get(group, []))
+    relevant_stats = {k: v for k, v in stats.items() if k not in ignore_stats}
+    if not relevant_stats:
+        return 0
+    total = sum(relevant_stats.values())
+    overall = total // len(relevant_stats)
     return overall
 
 
@@ -601,8 +774,6 @@ if __name__ == "__main__":
             "P": 1,
         }
 
-        print(sum(position_counts.values()))
-
         used_numbers = set()
         for position, count in position_counts.items():
             # Gather all possible jersey numbers for this position
@@ -625,6 +796,10 @@ if __name__ == "__main__":
                 player_data = generate_player_data(position)
                 player_data["jersey_number"] = jersey_number
                 players.append(player_data)
+
+        # order players by overall within their position, but keeping the position order
+        position_order = list(position_counts.keys())
+        players.sort(key=lambda p: (position_order.index(p["position"]), -p["overall"]))
 
         team["players"] = players
         write_to_output_file(team.get("name"), team)
