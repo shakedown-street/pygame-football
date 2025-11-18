@@ -264,11 +264,11 @@ class Player(pygame.sprite.Sprite):
         number = self.info.get("jersey_number", 0)
         overall = self.info.get("overall", 50)
         speed = self.stats.get("speed", 50)
-        accel = self.stats.get("acceleration", 50)
         strength = self.stats.get("strength", 50)
         agility = self.stats.get("agility", 50)
+        awareness = self.stats.get("awareness", 50)
         max_speed = self.max_speed
-        return f"{name} ({number}) [overall={overall} speed={speed} acceleration={accel} strength={strength} agility={agility} max_speed={max_speed:.2f}]"
+        return f"{name} (#{number}) [overall={overall} speed={speed} strength={strength} agility={agility} awareness={awareness}]"
 
     @classmethod
     def from_roster(cls, team: Team, position: str, index=0):
@@ -320,9 +320,7 @@ class Ball(pygame.sprite.Sprite):
 
     def throw_to(self, target_pos: pygame.Vector2, player: Player, lob=False):
         throw_power = player.stats.get("throw_power", 50)
-        throw_accuracy_short = player.stats.get("throw_accuracy_short", 50)
-        throw_accuracy_mid = player.stats.get("throw_accuracy_mid", 50)
-        throw_accuracy_deep = player.stats.get("throw_accuracy_deep", 50)
+        throw_accuracy = player.stats.get("throw_accuracy", 50)
 
         offset = target_pos - self.pos
         distance = offset.length()
@@ -332,21 +330,13 @@ class Ball(pygame.sprite.Sprite):
         throw_min_arc = THROW_MIN_ARC
         throw_arc_divisor = THROW_ARC_DIVISOR
 
-        # Determine accuracy and deviation factor based on distance
-        if distance <= 20 * YARD_LENGTH:
-            accuracy = throw_accuracy_short
-        elif distance <= 40 * YARD_LENGTH:
-            accuracy = throw_accuracy_mid
-        else:
-            accuracy = throw_accuracy_deep
-
         # Adjust parameters for lob throws
         if lob:
             throw_speed *= 0.7
             throw_min_frames *= 1.5
             throw_min_arc *= 1.5
             throw_arc_divisor /= 1.5
-            accuracy *= 0.9
+            throw_accuracy *= 0.9
 
         # Adjust target position based on throw power
         max_distance = THROW_MAX_YARDS * YARD_LENGTH * (throw_power / 100)
@@ -356,8 +346,8 @@ class Ball(pygame.sprite.Sprite):
             offset = target_pos - self.pos
             distance = max_distance
 
-        # Calculate random angle deviation based on accuracy
-        max_deviation = (100 - accuracy) * THROW_DEVIATION_FACTOR
+        # Calculate random angle deviation based on throw_accuracy
+        max_deviation = (100 - throw_accuracy) * THROW_DEVIATION_FACTOR
         angle_deviation = (
             random.uniform(-max_deviation, max_deviation) if not PERFECT_THROWING else 0
         )
@@ -385,7 +375,7 @@ class Ball(pygame.sprite.Sprite):
         self.frames_left = n_frames
 
         print(
-            f"throw_power={throw_power} accuracy={accuracy} distance_yards={distance / YARD_LENGTH:.1f} throw_speed={throw_speed:.1f} angle_deviation={angle_deviation:.1f} max_height={arc_height / YARD_LENGTH:.1f} n_frames={n_frames}"
+            f"Ball thrown [throw_power={throw_power} throw_accuracy={throw_accuracy:.1f} distance_yards={distance / YARD_LENGTH:.1f} throw_speed={throw_speed:.1f} angle_deviation={angle_deviation:.1f} max_height={arc_height / YARD_LENGTH:.1f} n_frames={n_frames}]"
         )
 
     def stop(self):
@@ -627,7 +617,7 @@ def handle_receiver_reaction():
     reaction_frames = int(max_frames - (awareness / 100) * (max_frames - min_frames))
     nearest_receiver.reaction_timer = reaction_frames
     nearest_receiver.reaction_target = landing_at.copy()
-    print(f"awareness={awareness} reaction_frames={reaction_frames}")
+    print(f"Reacted to throw [reaction_frames={reaction_frames}]")
 
 
 reset_play()
@@ -699,7 +689,7 @@ while True:
                         # Even a perfectly rated receiver can drop a pass occasionally
                         random_roll = random.randint(1, 100)
                         print(
-                            f"z_yards={ball.z/YARD_LENGTH:.2f} catching={catching} random_roll={random_roll}"
+                            f"Attempting catch [z_yards={ball.z/YARD_LENGTH:.2f} catching={catching} random_roll={random_roll}]"
                         )
                         ball.stop()
                         receiver.reset_reaction()

@@ -9,6 +9,10 @@
 - Momentum based collision detection
 - Simple play reset and basic formations
 
+## Tools
+
+- Dynamic randomized team generation with realistic stat ranges
+
 ## Goals
 
 - Defensive AI
